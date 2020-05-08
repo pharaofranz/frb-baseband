@@ -44,7 +44,7 @@ compare_size() {
     # takes a list of files and compares their sizes
     # the list is something like files='f1 f2 f3...fn'
     files=$1
-    echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` comparing sizes btw ${files}"
+    msg "comparing sizes btw ${files}"
     s=0
     diff=1
     counter=0
@@ -62,15 +62,19 @@ compare_size() {
         sleep 5
         let counter=${counter}+1
         if [[ $counter -eq 30 ]];then
-            echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` file sizes still not the same, aborting..."
+            msg "file sizes still not the same, aborting..."
             return 1;
         fi
     done
-    echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Seems fine, final size is $size"
+    msg "Seems fine, final size is $size"
 }
 submit_fetch() {
-     /home/franz/software/src/anaconda3/envs/osoFRBsearch/bin/python /home/franz/software/src/greenburst/pika_send.py -q "stage01_queue" -m ${1}
+     /home/franz/.conda/envs/fetch/bin/python /home/franz/software/src/greenburst/pika_send.py -q "stage01_queue" -m ${1}
 }
+msg() {
+    echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` ${1}"
+}
+
 ####
 # Onsala, magnetar obs
 ####
@@ -95,10 +99,11 @@ bw=32.0            # bandwidth per IF
 station='Onsala85'  # relevant for folding data (station code for tempo2)
 st='o8_2g'          # relevant for bit map used by jive5ab (see spif2file.vlbish)
 experiment='pr999e'
-workdir_odd='/scratch0/franz/'${experiment}   #  vdif files expected to be here
-workdir_even='/scratch1/franz/'${experiment}
-outdir='/data1/franz/'${experiment}           # final downsampled filterbank file goes here
-fifodir='/tmp/franz/fifos/'
+workdir_odd="/scratch0/${USER}/"${experiment}   #  vdif files expected to be here
+workdir_even="/scratch1/${USER}/"${experiment}
+outdir="/data1/${USER}/"${experiment}           # final downsampled filterbank file goes here
+fifodir="/tmp/${USER}/fifos/"
+vbsdir="${HOME}/vbs_data/${experiment}"    # baseband data is mounted here.
 start=0 #
 cal_length1=0   # length of first cal-scan
 cal_length2=0   # length of second cal-scan
@@ -136,12 +141,29 @@ fi
 if ! [ -d ${outdir} ];then
     mkdir -p ${outdir}
 fi
-#if ! [ -d ${tmpdir} ];then
-#    mkdir -p ${tmpdir}
-#fi
+if ! [ -d ${vbsdir} ];then
+    mkdir -p ${vbsdir}
+fi
 if ! [ -d ${fifodir} ];then
     mkdir -p ${fifodir}
 fi
+n_baseband_files=`ls -l ${vbsdir} | wc -l`
+if [ ${n_baseband_files} -eq 1 ];then
+    msg "${vbsdir} is empty."
+    msg "Mounting files for ${experiment} into ${vbsdir}"
+    echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir}"
+    vbs_fs -n 8 -I "${experiment}*" ${vbsdir}
+    sleep 3
+    n_baseband_files=`ls -l ${vbsdir} | wc -l`
+    if [ ${n_baseband_files} -eq 1 ];then
+	msg "Something went wrong, still have no files in ${vbsdir}."
+	echo "Aborting..."
+	exit 1
+    fi
+fi
+msg "There are ${n_baseband_files} in ${vbsdir}"
+
+
 for scan in $scans;do
     for chunk in ${chunks};do
         vdif_files=""
@@ -151,9 +173,9 @@ for scan in $scans;do
             vdifnme=${workdir_odd}/${experiment}_${st}_no0${scan}_IF${i}_s${chunk}.vdif
             vdif_files=${vdif_files}${vdifnme}" "
             if [ ! -f ${vdifnme} ];then
-                echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Splitting the VDIF on Bogar."
+                msg "Splitting the VDIF on Bogar."
                 /home/franz/scripts/spif2file_2chunk.vlbish ${experiment} ${sts} ${scan} ${chunk} ${cal_length1} ${cal_length2} ${tgt_length1} ${tgt_length2} ${nif}
-                echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` splitting is done, waiting 30s for the disks to catch up"
+                msg "splitting is done, waiting 30s for the disks to catch up"
                 sleep 30
             fi
             #filfifo=${vdifnme}_pol${pol}.fil
@@ -165,9 +187,9 @@ for scan in $scans;do
             vdifnme=${workdir_even}/${experiment}_${st}_no0${scan}_IF${n}_s${chunk}.vdif
             vdif_files=${vdif_files}${vdifnme}" "
             if [ ! -f ${vdifnme} ];then
-                echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Splitting the VDIF on Bogar for even IFs."
+                msg "Splitting the VDIF on Bogar for even IFs."
                 /home/franz/scripts/spif2file_2chunk.vlbish ${experiment} ${sts} ${scan} ${chunk} ${cal_length1} ${cal_length2} ${tgt_length1} ${tgt_length2} ${nif}
-                echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` splitting is done, waiting 30s for the disks to catch up"
+                msg "splitting is done, waiting 30s for the disks to catch up"
                 sleep 30
             fi
             #filfifo=${vdifnme}_pol${pol}.fil
@@ -194,14 +216,14 @@ for scan in $scans;do
     # increase the fifo buffer size to speed things up, but wait till splice is running first
     sleep 2 && for filfifo in ${splice_list}; do \
         /home/franz/scripts/setfifo.perl ${filfifo} 1048576; \
-        sleep 0.2;done && echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Changed fifo sizes successfuly." &
+        sleep 0.2;done && msg "Changed fifo sizes successfuly." &
     splice ${splice_list} > ${outdir}/${filfile} && \
         rm ${workdir_even}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif \
            ${workdir_odd}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif && \
         submit_fetch ${outdir}/${filfile} && \
-        echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Submitted ${outdir}/${filfile} to fetch" && \
+        msg "Submitted ${outdir}/${filfile} to fetch" && \
         for filfifo in ${splice_list};do rm $filfifo; done && \
-        echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Fifos removed" &
+        msg "Fifos removed" &
     sleep 30
 done # end chunks
 done # end scans
