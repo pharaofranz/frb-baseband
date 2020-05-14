@@ -74,30 +74,37 @@ submit_fetch() {
 msg() {
     echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` ${1}"
 }
+get_station_code(){
+    stations='onsala85 onsala60 srt wsrt effelsberg torun'
+    sts=(o8 o6 sr wb ef tr)
+    station=$1
+    station=${station,,} # set all to lower case
+    c=0
+    st=''
+    for sta in ${stations};do 
+	if [[ ${sta} == ${station} ]];then
+	    st=${sts[c]}
+	    break
+	fi
+	let c+=1
+    done
+    if [ -z "$st" ]; then
+	echo "Station ${station} not known."
+	echo "Options are: (${stations})"
+	return 1
+    fi
+    echo $st
+}
 
-####
-# Onsala, magnetar obs
-####
-scans=`seq -f "%03g" 6 28` # SGR1935, 15 min
-#scans='001'  # B1933+16, 10min
-
-#source="R3 --ra 01:58:00.7495 --dec 65:43:00.3185"
-#source="R2 --ra 04:22:39.0 --dec 73:40:06.00"
-source="SGR1935 --ra 19:34:55.68 --dec 21:53:48.2"
-
-#source="B0531+21"
-#source="B0329+54"
-#source="B0355+54"
-#source="B1933+16"
+# intiate default vars
+scans='001'  
+target="R3 --ra 01:58:00.7495 --dec 65:43:00.3185"
+#target="B1933+16"
 
 chunks='1'         # relevant only for PRECISE runs (one file contains 4 scans, cal - target - cal - target, in that case chunks='1 3')
 freqLSB_0=1275.49  # central frequency of lowest LSB channel (typically IF1)
-freqUSB_0=1307.49  # central frequency of lowest USB channel (typically IF2)
 bw=32.0            # bandwidth per IF
-#station='SRT'
-#st='sr'
 station='Onsala85'  # relevant for folding data (station code for tempo2)
-st='o8_2g'          # relevant for bit map used by jive5ab (see spif2file.vlbish)
 experiment='pr999e'
 workdir_odd="/scratch0/${USER}/"${experiment}   #  vdif files expected to be here
 workdir_even="/scratch1/${USER}/"${experiment}
@@ -116,18 +123,28 @@ pol=2           # if set to 2 will create stokes I
                 # if set to either 0 or 1 will process only one polarisation
 tscrunch=8      # downsampling factor for digil (final filterbank)
 digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sensitivity...
-
-# below relevant for number of seconds in vdif data
 frame_size=8016        # in bytes
-frames_per_second=4000 # 4000 for 4G recording at OSO = 64000 / 16 IFs
-                       # 4000 also for 2G recording at SRT = 32000 / 8 IFs
+flipIF=0
+
+# load vars from config file
+source ${1}
+
+spif2file='/data1/franz/frb-baseband/spif2file_2chunk.vlbish'
+datarate=`echo $bw*$nif*8 | bc | cut -d '.' -f1` # bw in MHz, 8 = 2pol*2bitsamples*2nyquist
+wordlength=`echo ${nif}*2*2`
+frames_per_second=`echo ${datarate}*1000000/8/8000 | bc | cut -d '.' -f1`
+frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
+
+mode="VDIF_8000-${datarate}-${wordlength}-2"
 
 # nothing to change below this line
-# fiddling around with 'st'-variable. $sts is only used in submission to bogar
-# to enable different bitmaps for the same station (e.g. Tr at L- or at C-band)
-# we need the first two letters on from $st as defined above for file names
-sts=$st
-st=${sts:0:2}
+freqUSB_0=`echo ${freqLSB_0}+${bw} | bc`  # central frequency of lowest USB channel (typically IF2)
+st=`get_station_code ${station}`
+if [[ $? -eq 1 ]];then
+    echo $st
+    exit 1
+fi
+
 let max_odd=${nif}-1
 ifs_odd=`seq 1 2 ${max_odd}`
 ifs_even=`seq 2 2 ${nif}`
@@ -174,7 +191,7 @@ for scan in $scans;do
             vdif_files=${vdif_files}${vdifnme}" "
             if [ ! -f ${vdifnme} ];then
                 msg "Splitting the VDIF on Bogar."
-                /home/franz/scripts/spif2file_2chunk.vlbish ${experiment} ${sts} ${scan} ${chunk} ${cal_length1} ${cal_length2} ${tgt_length1} ${tgt_length2} ${nif}
+                ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${chunk} ${cal_length1} ${tgt_length1} ${cal_length2} ${tgt_length2} ${flipIF}
                 msg "splitting is done, waiting 30s for the disks to catch up"
                 sleep 30
             fi
@@ -188,7 +205,7 @@ for scan in $scans;do
             vdif_files=${vdif_files}${vdifnme}" "
             if [ ! -f ${vdifnme} ];then
                 msg "Splitting the VDIF on Bogar for even IFs."
-                /home/franz/scripts/spif2file_2chunk.vlbish ${experiment} ${sts} ${scan} ${chunk} ${cal_length1} ${cal_length2} ${tgt_length1} ${tgt_length2} ${nif}
+                ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${chunk} ${cal_length1} ${tgt_length1} ${cal_length2} ${tgt_length2} ${flipIF}		
                 msg "splitting is done, waiting 30s for the disks to catch up"
                 sleep 30
             fi
@@ -205,11 +222,11 @@ for scan in $scans;do
         exit 1
     fi
     file_size=`ls -l ${vdifnme} | cut -d ' ' -f 5`
-    nsec=`echo "${file_size}/${frame_size}/${frames_per_second}" | bc`
-    run_process_vdif $scan "$ifs_odd" "$source" $experiment $st $freqLSB_0 $bw l $nchan $nsec $start \
+    nsec=`echo "${file_size}/${frame_size}/${frames_per_second_per_band}" | bc`
+    run_process_vdif $scan "$ifs_odd" "$target" $experiment $st $freqLSB_0 $bw l $nchan $nsec $start \
                       $station $njobs_splice $chunk $workdir_odd $pol $digifil_nthreads $tscrunch ${fifodir}
     # even IFs (i.e. USB)
-    run_process_vdif $scan "$ifs_even" "$source" $experiment $st $freqUSB_0 $bw u $nchan $nsec $start \
+    run_process_vdif $scan "$ifs_even" "$target" $experiment $st $freqUSB_0 $bw u $nchan $nsec $start \
                       $station $njobs_splice $chunk $workdir_even $pol $digifil_nthreads $tscrunch ${fifodir}
 
     filfile=${experiment}_${st}_no0${scan}_IFall_s${chunk}_vdif_pol${pol}.fil
@@ -229,12 +246,12 @@ done # end chunks
 done # end scans
 wait < <(jobs -p)
 # in case we look at a pulsar fold it and create a plot
-psrcat -e ${source} > ${source}.psrcat.par
+psrcat -e ${target} > ${target}.psrcat.par
 if [ $? -eq 0 ];then
     for scan in $scans;do
         for chunk in ${chunks};do
             filfile=${experiment}_${st}_no0${scan}_IFall_s${chunk}_vdif_pol${pol}.fil
-            dspsr -E ${source}.psrcat.par -L 10 -A -k ${station} -d1 ${outdir}/${filfile} -O ${outdir}/${filfile} -t 8
+            dspsr -E ${target}.psrcat.par -L 10 -A -k ${station} -d1 ${outdir}/${filfile} -O ${outdir}/${filfile} -t 8
             psrplot -pF -D /CPS -c x:unit=s ${outdir}/${filfile}.ar -j dedisperse,tscrunch,pscrunch,"fscrunch 128"
             mv pgplot.ps ${outdir}/${filfile}.ps
         done
