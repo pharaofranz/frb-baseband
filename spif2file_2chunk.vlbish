@@ -16,7 +16,7 @@ vbs_fs_dir="${HOME}/vbs_data/${experiment}/"
 outdir1="/scratch0/${USER}/${experiment}"  
 outdir2="/scratch1/${USER}/${experiment}"
 linkdir='/tmp/'
-cmd2flexbuff='/home/franz/scripts/cmd2flexbuff_frb.py'
+cmd2flexbuff='/home/franz/git/frb-baseband/cmd2flexbuff_frb.py'
 
 
 subscan_length="${cal_length1} ${scanlength1} ${cal_length2} ${scanlength2}"

@@ -32,7 +32,7 @@ run_process_vdif() {
     bandstep=`echo $bw+$bw | bc`
 
     for i in ${ifs};do
-        ~/git/my_all/python/process_vdif.py ${source} ${workdir}/${experiment}_${st}_no0${scan}_IF${i}_s${chunk}.vdif  \
+        /home/franz/git/frb-baseband/python/process_vdif.py ${source} ${workdir}/${experiment}_${st}_no0${scan}_IF${i}_s${chunk}.vdif  \
                                             -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
                                             --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} --fil_out_dir ${fifodir} & sleep 0.2
         pwait $njobs
@@ -106,11 +106,11 @@ freqLSB_0=1275.49  # central frequency of lowest LSB channel (typically IF1)
 bw=32.0            # bandwidth per IF
 station='Onsala85'  # relevant for folding data (station code for tempo2)
 experiment='pr999e'
-workdir_odd="/scratch0/${USER}/"${experiment}   #  vdif files expected to be here
-workdir_even="/scratch1/${USER}/"${experiment}
-outdir="/data1/${USER}/"${experiment}           # final downsampled filterbank file goes here
-fifodir="/tmp/${USER}/fifos/"
-vbsdir="${HOME}/vbs_data/${experiment}"    # baseband data is mounted here.
+workdir_odd_base=/scratch0/${USER}/   #  vdif files expected to be here
+workdir_even_base=/scratch1/${USER}/
+outdir_base=/data1/${USER}/           # final downsampled filterbank file goes here
+fifodir_base=/tmp/${USER}/fifos/
+vbsdir_base=${HOME}/vbs_data/    # baseband data is mounted here.
 start=0 #
 cal_length1=0   # length of first cal-scan
 cal_length2=0   # length of second cal-scan
@@ -129,9 +129,15 @@ flipIF=0
 # load vars from config file
 source ${1}
 
-spif2file='/data1/franz/frb-baseband/spif2file_2chunk.vlbish'
+workdir_odd=${workdir_odd_base}/${experiment}   #  vdif files expected to be here
+workdir_even=${workdir_even_base}/${experiment}
+outdir=${outdir_base}/${experiment}           # final downsampled filterbank file goes here
+fifodir=${fifodir_base}/fifos/
+vbsdir=${vbsdir_base}/${experiment}    # baseband data is mounted here.
+
+spif2file='/home/franz/git/frb-baseband/spif2file_2chunk.vlbish'
 datarate=`echo $bw*$nif*8 | bc | cut -d '.' -f1` # bw in MHz, 8 = 2pol*2bitsamples*2nyquist
-wordlength=`echo ${nif}*2*2`
+wordlength=`echo ${nif}*2*2 | bc`
 frames_per_second=`echo ${datarate}*1000000/8/8000 | bc | cut -d '.' -f1`
 frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
 
@@ -232,7 +238,7 @@ for scan in $scans;do
     filfile=${experiment}_${st}_no0${scan}_IFall_s${chunk}_vdif_pol${pol}.fil
     # increase the fifo buffer size to speed things up, but wait till splice is running first
     sleep 2 && for filfifo in ${splice_list}; do \
-        /home/franz/scripts/setfifo.perl ${filfifo} 1048576; \
+        /home/franz/git/frb-baseband/setfifo.perl ${filfifo} 1048576; \
         sleep 0.2;done && msg "Changed fifo sizes successfuly." &
     splice ${splice_list} > ${outdir}/${filfile} && \
         rm ${workdir_even}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif \
