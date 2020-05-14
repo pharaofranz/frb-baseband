@@ -1,77 +1,84 @@
 #!/usr/bin/env bash
-#vlbish oper@bogar:32625/version?
+
 experiment=$1
-vbs_fs_dir='/home/franz/vbs_data/'${experiment}'/'
 station=$2
-#scans=`seq -f "%03g" 196 4 200`
 scans=$3
-subscan=$4
-cal_length1=$5 #113 #in seconds
-cal_length2=$6 #145 #in seconds
-scanlength1=$7 #in seconds 
-scanlength2=$8 # in seconds
-nif=$9
-outdir1='/scratch0/franz/'${experiment}  # /home/franz/dore_1/franz/'${experiment}
-outdir2='/scratch1/franz/'${experiment}
-#outdir2='/mnt/scratch3/franz/'${experiment}
-linkdir='/home/franz/spiflinks/'
+nif=$4
+mode=$5
+subscan=${6:-1}
+cal_length1=${7:-0}  #in seconds
+scanlength1=${8:-9999}  #in seconds 
+cal_length2=${9:-0}  #in seconds
+scanlength2=${10:-0}  #in seconds
+flipped=${11:-0} # recipes assume LO is below sky freq, if LO above sky freq LSB and USB are flipped
+
+vbs_fs_dir="${HOME}/vbs_data/${experiment}/"
+outdir1="/scratch0/${USER}/${experiment}"  
+outdir2="/scratch1/${USER}/${experiment}"
+linkdir='/tmp/'
+cmd2flexbuff='/home/franz/scripts/cmd2flexbuff_frb.py'
+
 
 subscan_length="${cal_length1} ${scanlength1} ${cal_length2} ${scanlength2}"
-let nif=${nif}-2 # we actually do a plus 1 below and go in steps of two
-if [[ ${station} == 'o8' ]];then
+
+if [[ ${mode} == 'VDIF_8000-4096-32-2' ]];then
     frames_per_second=64000
-    mode='VDIF_8000-4096-32-2'
     recipe="64>[16,17,48,49][0,1,32,33][18,19,50,51][2,3,34,35][20,21,52,53][4,5,36,37][22,23,54,55][6,7,38,39][24,25,56,57][8,9,40,41][26,27,58,59][10,11,42,43][28,29,60,61][12,13,44,45][30,31,62,63][14,15,46,47]:0-15"
-elif [[ ${station} == 'tr' ]] || [[ ${station} == 'sr' ]];then
+#
+elif [[ ${mode} == 'VDIF_8000-2048-16-2' ]];then
     frames_per_second=32000
-    mode='VDIF_8000-2048-16-2'
-    recipe="32>[0,1,8,9][16,17,24,25][2,3,10,11][18,19,26,27][4,5,12,13][20,21,28,29][6,7,14,15][22,23,30,31]:0-7"
-elif [[ ${station} == 'ef' ]] || [[ ${station} == 'tr_c' ]] || [[ ${station} == 'o8_2g' ]];then
-    if [[ ${station} == 'tr_c' ]];then
-	station='tr'
-    fi
-    if [[ ${station} == 'o8_2g' ]];then
-	station='o8'
-    fi
-    frames_per_second=32000
-    mode='VDIF_8000-2048-16-2'
     recipe="32>[16,17,24,25][0,1,8,9][18,19,26,27][2,3,10,11][20,21,28,29][4,5,12,13][22,23,30,31][6,7,14,15]:0-7"
-elif [[ ${station} == 'wb' ]];then
-    frames_per_second=8000
-    mode='VDIF_8000-512-4-2'
-    recipe="8>[4,5,6,7][0,1,2,3]:0-1"
-elif [[ ${station} == 'ef_1g' ]] || [[ ${station} == 'o8_1g' ]];then
-    if [[ ${station} == 'o8_1g' ]];then
-	station='o8'
-    fi
-    if [[ ${station} == 'ef_1g' ]];then
-	station='ef'
-    fi
+#
+elif [[ ${mode} == 'VDIF_8000-1024-16-2' ]];then
     frames_per_second=16000
-    mode='VDIF_8000-1024-16-2'
     recipe="32>[16,17,24,25][0,1,8,9][18,19,26,27][2,3,10,11][20,21,28,29][4,5,12,13][22,23,30,31][6,7,14,15]:0-7"
+#
+elif [[ ${mode} == 'VDIF_8000-1024-8-2' ]];then
+    frames_per_second=16000
+    recipe="16>[8,9,12,13][0,1,4,5][10,11,14,15][2,3,6,7]:0-3"
+#
+elif [[ ${mode} == 'VDIF_8000-512-4-2' ]];then
+    frames_per_second=8000
+    recipe="8>[4,5,6,7][0,1,2,3]:0-1"
+    #
+else
+    echo "mode ${mode} not implemented. Aborting."
+    exit 1
 fi
+if [[ ${flipped} -gt 0 ]];then
+    r=`echo $recipe | cut -d '[' -f1`
+    sign=-1
+    add=1
+    for i in `seq 1 ${nif}`;do
+	# odd IFs plus 1, even IFs minus 1
+	let field=$i+1 # because field 1 is the word length
+	let field=${field}+${add}
+	r=${r}[`echo $recipe | cut -d '[' -f${field} | cut -d ']' -f1`]
+	add=`echo ${add}*${sign} | bc`
+    done
+    let field=${nif}+1
+    r=${r}`echo $recipe | cut -d ']' -f${field}`
+    recipe=${r}
+fi
+
+let nif=${nif}-2 # we actually do a plus 1 below and go in steps of two
 bytes_per_second=`echo "8032*${frames_per_second}" | bc`
 bytes_per_minute=`echo "${bytes_per_second}*60" | bc`
 
 for scan in $scans;do
     vbs_fs_file=${experiment}"_${station}_no0"${scan}
-    start_frame=`/home/franz/vdif_print_headers ${vbs_fs_dir}/${vbs_fs_file} -n1 | tr "," " " | tr " " "|" | awk -F "|" '{print $5}'`
+    start_frame=`vdif_print_headers ${vbs_fs_dir}/${vbs_fs_file} -n1 | tr "," " " | tr " " "|" | awk -F "|" '{print $5}'`
     skipbytes=`echo "(${frames_per_second}-${start_frame}-1)*8032" | bc`
     chunk=0
     start_byte=${skipbytes}
     for length in ${subscan_length};do
-	#echo "length: ${length}"
 	stop_byte=`echo "${start_byte}+${bytes_per_second}*${length}+16*8032" | bc`
 	if [[ $chunk -eq ${subscan} ]];then
-	#if [[ $chunk -eq 1 ]] || [[ $chunk -eq 3 ]]; then
-	    state=`~/scripts/cmd2flexbuff_frb.py "spif2file?" | awk '{print $5}'`
+	    state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
 	    while [[ ${state} == 'active' ]];do
 		sleep 30
-		state=`~/scripts/cmd2flexbuff_frb.py "spif2file?" | awk '{print $5}'`
+		state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
 	    done
-	    #echo "start_byte: ${start_byte}"
-	    #echo "stop_byte: ${stop_byte}"
 	    for i in `seq 0 2 ${nif}`;do
 		let ii=$i+1
 		rm ${linkdir}/if_${i}
@@ -81,7 +88,7 @@ for scan in $scans;do
 		ln -s ${outdir1}/${vbs_fs_file}_IF${odd_if}_s${chunk}.vdif ${linkdir}/if_${i}
 		ln -s ${outdir2}/${vbs_fs_file}_IF${even_if}_s${chunk}.vdif ${linkdir}/if_${ii}
 	    done
-	    ./cmd2flexbuff_frb.py \
+	    ${cmd2flexbuff} \
 		"net_protocol=udpsnor:32000000:32000000:3; \
  spif2file=vdifsize:8000; \
  mode=${mode}; \
@@ -93,14 +100,13 @@ for scan in $scans;do
 	    sleep 90
 	fi
 	start_byte=`echo "${stop_byte}-16*8032" | bc `
-	#start_byte=${stop_byte}
 	let chunk=${chunk}+1
     done
 done
-state=`~/scripts/cmd2flexbuff_frb.py "spif2file?" | awk '{print $5}'`
+state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
 while [[ ${state} == 'active' ]];do
     sleep 10
-    state=`~/scripts/cmd2flexbuff_frb.py "spif2file?" | awk '{print $5}'`
+    state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
 done
 
 
