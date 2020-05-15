@@ -32,7 +32,7 @@ run_process_vdif() {
     bandstep=`echo $bw+$bw | bc`
 
     for i in ${ifs};do
-        /home/franz/git/frb-baseband/python/process_vdif.py ${source} ${workdir}/${experiment}_${st}_no0${scan}_IF${i}_s${chunk}.vdif  \
+        /home/franz/git/frb-baseband/process_vdif.py ${source} ${workdir}/${experiment}_${st}_no0${scan}_IF${i}_s${chunk}.vdif  \
                                             -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
                                             --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} --fil_out_dir ${fifodir} & sleep 0.2
         pwait $njobs
@@ -59,9 +59,9 @@ compare_size() {
             fi
             s=$size
         done
-        sleep 5
+        sleep 1
         let counter=${counter}+1
-        if [[ $counter -eq 30 ]];then
+        if [[ $counter -eq 90 ]];then
             msg "file sizes still not the same, aborting..."
             return 1;
         fi
@@ -137,11 +137,11 @@ vbsdir=${vbsdir_base}/${experiment}    # baseband data is mounted here.
 
 spif2file='/home/franz/git/frb-baseband/spif2file_2chunk.vlbish'
 datarate=`echo $bw*$nif*8 | bc | cut -d '.' -f1` # bw in MHz, 8 = 2pol*2bitsamples*2nyquist
-wordlength=`echo ${nif}*2*2 | bc`
+nbbc=`echo ${nif}*2 | bc | cut -d '.' -f1`
 frames_per_second=`echo ${datarate}*1000000/8/8000 | bc | cut -d '.' -f1`
 frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
 
-mode="VDIF_8000-${datarate}-${wordlength}-2"
+mode="VDIF_8000-${datarate}-${nbbc}-2"
 
 # nothing to change below this line
 freqUSB_0=`echo ${freqLSB_0}+${bw} | bc`  # central frequency of lowest USB channel (typically IF2)
@@ -198,8 +198,11 @@ for scan in $scans;do
             if [ ! -f ${vdifnme} ];then
                 msg "Splitting the VDIF on Bogar."
                 ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${chunk} ${cal_length1} ${tgt_length1} ${cal_length2} ${tgt_length2} ${flipIF}
-                msg "splitting is done, waiting 30s for the disks to catch up"
-                sleep 30
+		if [[ $? -eq 1 ]];then
+		    exit 1
+		fi
+                msg "splitting is done, waiting 5s for the disks to catch up"
+                sleep 5
             fi
             #filfifo=${vdifnme}_pol${pol}.fil
 	    filfifo=${fifodir}/`basename ${vdifnme}`_pol${pol}.fil
@@ -212,8 +215,11 @@ for scan in $scans;do
             if [ ! -f ${vdifnme} ];then
                 msg "Splitting the VDIF on Bogar for even IFs."
                 ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${chunk} ${cal_length1} ${tgt_length1} ${cal_length2} ${tgt_length2} ${flipIF}		
-                msg "splitting is done, waiting 30s for the disks to catch up"
-                sleep 30
+		if [[ $? -eq 1 ]];then
+		    exit 1
+		fi
+                msg "splitting is done, waiting 5s for the disks to catch up"
+                sleep 5
             fi
             #filfifo=${vdifnme}_pol${pol}.fil
 	    filfifo=${fifodir}/`basename ${vdifnme}`_pol${pol}.fil
@@ -247,7 +253,7 @@ for scan in $scans;do
         msg "Submitted ${outdir}/${filfile} to fetch" && \
         for filfifo in ${splice_list};do rm $filfifo; done && \
         msg "Fifos removed" &
-    sleep 30
+    sleep 5
 done # end chunks
 done # end scans
 wait < <(jobs -p)
