@@ -125,6 +125,7 @@ tscrunch=8      # downsampling factor for digil (final filterbank)
 digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sensitivity...
 frame_size=8016        # in bytes
 flipIF=0
+njobs_parallel=20
 
 # load vars from config file
 source ${1}
@@ -227,7 +228,7 @@ for scan in $scans;do
             splice_list=${filfifo}' '${splice_list}
         done
 
-    let njobs_splice=18 #${nif}+1 # 1 extra for splice, another for digfil
+    let njobs_splice=${njobs_parallel} #${nif}+1 # 1 extra for splice, another for digfil
 
     compare_size "${vdif_files}"
     if [[ $? -eq 1 ]];then
