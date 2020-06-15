@@ -58,7 +58,8 @@ def options():
                          help='Determines which "channel" of the vdif file to process. '+
                          'Currently dspsr understands only 2-channel VDIF, where each chan '+
                          'is thought to be a polaristaion. If set to 2 will process both '+
-                         'creating stokes I. '+
+                         'creating stokes I. If set to 3 get (PP+QQ)^2, if 4 get full '+
+                         'polarisation, i.e. PP,QQ,PQ,QP. '
                          'Default=%(default)s.', )
     digifil.add_argument('--twobit', action='store_true',
                          help='If set will spit out 2bit filterbank instead of 8bit.')
@@ -146,8 +147,16 @@ def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=
         cmd = '{0} -P{1} -F{2}:{3}'.format(cmd, pol, nchan, leakage_factor)
     else:
         if pol == 2:
-            pol = 1
-        cmd = '{0} -d{3} -F{1}:{2}'.format(cmd, nchan, leakage_factor, pol)
+            # get Stokes I, i.e. PP+QQ
+            cmd = '{0} -d1 -F{1}:{2}'.format(cmd, nchan, leakage_factor)
+        elif pol == 4:
+            # full pol, PP,QQ,PQ,QP
+            cmd = '{0} -d4 -F{1}:{2}'.format(cmd, nchan, leakage_factor)
+        elif pol == 3:
+            # (PP+QQ)^2
+            cmd = '{0} -d3 -F{1}:{2}'.format(cmd, nchan, leakage_factor)
+        else:
+            raise InputError(f'pol = {pol} not implemented. Choices are 0, 1, 2, 3, 4')
     if dm > 0.0:
         cmd = '{0} -D {1}'.format(cmd, dm)
         if coherent:
