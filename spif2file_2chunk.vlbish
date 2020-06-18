@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 experiment=$1
 station=$2
@@ -15,9 +15,8 @@ flipped=${11:-0} # recipes assume LO is below sky freq, if LO above sky freq LSB
 vbs_fs_dir="${HOME}/vbs_data/${experiment}/"
 outdir1="/scratch0/${USER}/${experiment}"  
 outdir2="/scratch1/${USER}/${experiment}"
-linkdir='/tmp/'
+linkdir="/tmp/${USER}/"
 cmd2flexbuff='/home/franz/git/frb-baseband/cmd2flexbuff_frb.py'
-
 
 subscan_length="${cal_length1} ${scanlength1} ${cal_length2} ${scanlength2}"
 
