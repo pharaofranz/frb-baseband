@@ -2,7 +2,8 @@
 import argparse
 import subprocess
 import os, stat
-from random import randint
+import string
+import random
 
 
 def options():
@@ -102,6 +103,9 @@ def psr_info(psr):
     return ra.decode(), dec.decode(), float(dm)
 
 
+def id_generator(size=20, chars=string.ascii_uppercase + string.digits + string.ascii_lowercase):
+    return ''.join(random.choice(chars) for _ in range(size))
+
 def make_hdr(psr, freq, filename, pol=2, usb=True, ra=None, dec=None,
              bw=16.0, telescope='ONSALA85', tmp=False):
     if not usb:
@@ -163,10 +167,10 @@ def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=
             cmd = '{0} -F{1}:D'.format(cmd, nchan)
     print('running {0}'.format(cmd))
     try:
-        id = str(randint(1000, 4000))
+        id = id_generator()
         errfile_nme = '/tmp/digifil.{0}'.format(id)
         errfile = open(errfile_nme, 'w')
-        id = str(randint(5000, 9000))
+        id = id_generator()
         outfile_nme = '/tmp/digifil.{0}'.format(id)
         outfile = open(outfile_nme, 'w')
         subprocess.check_call(cmd, shell=True, stdout=outfile,
