@@ -109,7 +109,7 @@ experiment='pr999e'
 workdir_odd_base=/scratch0/${USER}/   #  vdif files expected to be here
 workdir_even_base=/scratch1/${USER}/
 outdir_base=/data1/${USER}/           # final downsampled filterbank file goes here
-fifodir_base=/tmp/${USER}/fifos/
+fifodir_base=/tmp/${USER}/
 vbsdir_base=${HOME}/vbs_data/    # baseband data is mounted here.
 start=0 #
 cal_length1=0   # length of first cal-scan
@@ -175,8 +175,8 @@ n_baseband_files=`ls -l ${vbsdir} | wc -l`
 if [ ${n_baseband_files} -eq 1 ];then
     msg "${vbsdir} is empty."
     msg "Mounting files for ${experiment} into ${vbsdir}"
-    echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir}"
-    vbs_fs -n 8 -I "${experiment}*" ${vbsdir}
+    echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir}" -o allow_other
+    vbs_fs -n 8 -I "${experiment}*" ${vbsdir} -o allow_other
     sleep 3
     n_baseband_files=`ls -l ${vbsdir} | wc -l`
     if [ ${n_baseband_files} -eq 1 ];then
@@ -248,11 +248,11 @@ for scan in $scans;do
         /home/franz/git/frb-baseband/setfifo.perl ${filfifo} 1048576; \
         sleep 0.2;done && msg "Changed fifo sizes successfuly." &
     splice ${splice_list} > ${outdir}/${filfile} && \
-        rm ${workdir_even}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif \
-           ${workdir_odd}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif && \
+        rm -rf ${workdir_even}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif \
+               ${workdir_odd}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif && \
         submit_fetch ${outdir}/${filfile} && \
         msg "Submitted ${outdir}/${filfile} to fetch" && \
-        for filfifo in ${splice_list};do rm $filfifo; done && \
+        for filfifo in ${splice_list};do rm -rf $filfifo; done && \
         msg "Fifos removed" &
     sleep 5
 done # end chunks
