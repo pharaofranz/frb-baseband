@@ -126,6 +126,7 @@ digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sens
 frame_size=8016        # in bytes
 flipIF=0
 njobs_parallel=20
+submit2fetch=1  # if equal to zero will not submit the filterbanks to fetch
 
 # load vars from config file
 source ${1}
@@ -247,13 +248,21 @@ for scan in $scans;do
     sleep 2 && for filfifo in ${splice_list}; do \
         /home/franz/git/frb-baseband/setfifo.perl ${filfifo} 1048576; \
         sleep 0.2;done && msg "Changed fifo sizes successfuly." &
-    splice ${splice_list} > ${outdir}/${filfile} && \
-        rm -rf ${workdir_even}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif \
+    if [[ $submit2fetch -ne 0 ]]; then
+	splice ${splice_list} > ${outdir}/${filfile} && \
+            rm -rf ${workdir_even}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif \
                ${workdir_odd}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif && \
-        submit_fetch ${outdir}/${filfile} && \
-        msg "Submitted ${outdir}/${filfile} to fetch" && \
-        for filfifo in ${splice_list};do rm -rf $filfifo; done && \
-        msg "Fifos removed" &
+            submit_fetch ${outdir}/${filfile} && \
+            msg "Submitted ${outdir}/${filfile} to fetch" && \
+            for filfifo in ${splice_list};do rm -rf $filfifo; done && \
+            msg "Fifos removed" &
+    else
+	splice ${splice_list} > ${outdir}/${filfile} && \
+            rm -rf ${workdir_even}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif \
+               ${workdir_odd}/${experiment}_${st}_no0${scan}_IF*_s${chunk}.vdif && \
+            for filfifo in ${splice_list};do rm -rf $filfifo; done && \
+            msg "Fifos removed" &
+    fi
     sleep 5
 done # end chunks
 done # end scans
