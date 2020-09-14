@@ -131,6 +131,12 @@ submit2fetch=1  # if equal to zero will not submit the filterbanks to fetch
 # load vars from config file
 source ${1}
 
+# run parse_vex.py with input from ${1}
+# parse_vex.py takes config files and appends necessary info.
+# then we source that new input file.
+# in case of multiple freq setups for same source and station run
+# several times from here
+
 workdir_odd=${workdir_odd_base}/${experiment}   #  vdif files expected to be here
 workdir_even=${workdir_even_base}/${experiment}
 outdir=${outdir_base}/${experiment}           # final downsampled filterbank file goes here
