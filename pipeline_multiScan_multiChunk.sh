@@ -143,7 +143,7 @@ outdir=${outdir_base}/${experiment}           # final downsampled filterbank fil
 fifodir=${fifodir_base}/fifos/
 vbsdir=${vbsdir_base}/${experiment}    # baseband data is mounted here.
 
-spif2file='/home/franz/git/frb-baseband/spif2file_2chunk.vlbish'
+spif2file='/usr/local/bin/spif2file_2chunk'
 datarate=`echo $bw*$nif*8 | bc | cut -d '.' -f1` # bw in MHz, 8 = 2pol*2bitsamples*2nyquist
 nbbc=`echo ${nif}*2 | bc | cut -d '.' -f1`
 frames_per_second=`echo ${datarate}*1000000/8/8000 | bc | cut -d '.' -f1`
