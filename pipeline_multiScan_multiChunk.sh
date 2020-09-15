@@ -112,10 +112,10 @@ outdir_base=/data1/${USER}/           # final downsampled filterbank file goes h
 fifodir_base=/tmp/${USER}/
 vbsdir_base=${HOME}/vbs_data/    # baseband data is mounted here.
 start=0 #
-cal_length1=0   # length of first cal-scan
-cal_length2=0   # length of second cal-scan
-tgt_length1=898 # length of first target scan
-tgt_length2=0   # length of second target scan
+
+scans=( 001 002 )
+skips=( 0 0 )
+lengths=( 10 10 )
 
 nchan=256       # number of channels in filterbank
 nif=8           # number of subbands in the data, 16 at OSO at 4G recording, 8 at Tr or Sr at 2G recording
