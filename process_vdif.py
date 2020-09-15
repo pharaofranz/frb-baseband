@@ -144,8 +144,12 @@ def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=
             raise InputError('Filterbankfile {0} exists already. '.format(filterbankfile) +
                              'Delete first or set --force to overwrite')
     nbit = 2 if twobit else 8
-    cmd = 'digifil -cont -c -b{4} -S{0} -T{1} -2 -D 0.0 -t {6} -o {2} {3} -threads {5}'.format(
-        start, nsecs, filterbankfile, hdr, nbit, nthreads, tscrunch)
+    if tscrunch > 1:
+        cmd = 'digifil -cont -c -b{4} -S{0} -T{1} -2 -D 0.0 -t {6} -o {2} {3} -threads {5}'.format(
+            start, nsecs, filterbankfile, hdr, nbit, nthreads, tscrunch)
+    else:
+        cmd = 'digifil -cont -c -b{4} -S{0} -T{1} -2 -D 0.0 -o {2} {3} -threads {5}'.format(
+            start, nsecs, filterbankfile, hdr, nbit, nthreads)
     leakage_factor = 512 if nchan <= 128 else 2*nchan
     if pol < 2:
         cmd = '{0} -P{1} -F{2}:{3}'.format(cmd, pol, nchan, leakage_factor)
