@@ -7,7 +7,8 @@ nif=$4
 mode=$5
 skip=${6:-0}
 length=${7:-9999}  #in seconds
-flipped=${8:-0} # recipes assume LO is below sky freq, if LO above sky freq LSB and USB are flipped
+scanname=${8:-${scan}}
+flipped=${9:-0} # recipes assume LO is below sky freq, if LO above sky freq LSB and USB are flipped
 
 vbs_fs_dir="${HOME}/vbs_data/${experiment}/"
 outdir1="/scratch0/${USER}/${experiment}"  
@@ -70,9 +71,10 @@ let nif=${nif}-2 # we actually do a plus 1 below and go in steps of two
 bytes_per_second=`echo "8032*${frames_per_second}" | bc`
 bytes_per_minute=`echo "${bytes_per_second}*60" | bc`
 vbs_fs_file=${experiment}"_${station}_no0"${scan}
+vbs_vdif_file=${experiment}"_${station}_no0"${scanname}
 start_frame=`vdif_print_headers ${vbs_fs_dir}/${vbs_fs_file} -n1 | tail -1 | tr "," " " | tr " " "|" | awk -F "|" '{print $5}'`
 skipbytes=`echo "(${frames_per_second}-${start_frame}-1)*8032" | bc`
-skipbytes=`echo "${skipbytes}+${bytes_per_second}*${skip}+16*8032" | bc`
+skipbytes=`echo "${skipbytes}+${bytes_per_second}*${skip}" | bc`
 start_byte=${skipbytes}
 stop_byte=`echo "${start_byte}+${bytes_per_second}*${length}+16*8032" | bc`
 state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
@@ -86,8 +88,8 @@ for i in `seq 0 2 ${nif}`;do
     rm ${linkdir}/if_${ii}
     let odd_if=$i+1
     let even_if=$ii+1
-    ln -s ${outdir1}/${vbs_fs_file}_IF${odd_if}_skip${skip}s.vdif ${linkdir}/if_${i}
-    ln -s ${outdir2}/${vbs_fs_file}_IF${even_if}_skip${skip}s.vdif ${linkdir}/if_${ii}
+    ln -s ${outdir1}/${vbs_vdif_file}_IF${odd_if}.vdif ${linkdir}/if_${i}
+    ln -s ${outdir2}/${vbs_vdif_file}_IF${even_if}.vdif ${linkdir}/if_${ii}
 done
 ${cmd2flexbuff} \
     "net_protocol=udpsnor:32000000:32000000:3; \
