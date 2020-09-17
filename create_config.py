@@ -25,7 +25,8 @@ def options():
                          help='Downsampling factor for final filterbanks. Default '\
                          'is no downsampling.')
     general.add_argument('-o', '--outfile', type=str, default=None,
-                         help='Name of the config file. Per default will be named ' \
+                         help='Name of the output config file. Per default will be ' \
+                         'created in current working directory and will be named ' \
                          '<experiment>_<station>_<source>.conf[_<mode>], where ' \
                          '_<mode> will only be appended in case there a multiple '\
                          'frequency setups.')
@@ -335,7 +336,8 @@ def main(args):
     template = args.template
     ra, dec = getSourceCoords(vex, source)
     if outfile == None:
-        outfile = f'{sched_dir}/{experiment}_{station}_{source}.conf'
+        outdir = os.getcwd()
+        outfile = f'{outdir}/{experiment}_{station}_{source}.conf'
     for fmode in fmodes:
         if len(fmodes) > 1:
             outfile = f'{outfile}_{fmode}'
