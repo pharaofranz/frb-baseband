@@ -8,7 +8,11 @@ def options():
     parser = argparse.ArgumentParser()
     general = parser.add_argument_group('General info about the data.')
     general.add_argument('vexfile', type=str,
-                         help='vexfile used for the experiment')
+                         help='vexfile used for the experiment. Script will ' \
+                         'create a pandas dataframe that contains the info '\
+                         'from the SCHED section in the vexfile. The dataframe ' \
+                         'will be created (and looked for) in the directory where ' \
+                         'where the vexfile lives. It will be named <vexfile>.df.')
     general.add_argument('-s', '--source', type=str, required=True,
                          help='REQUIRED. Source for which data are to be analysed.')
     general.add_argument('-t', '--telescope', type=str, required=True,
@@ -338,9 +342,14 @@ def main(args):
     if outfile == None:
         outdir = os.getcwd()
         outfile = f'{outdir}/{experiment}_{station}_{source}.conf'
-    for fmode in fmodes:
+    first=True
+    for i,fmode in enumerate(fmodes):
         if len(fmodes) > 1:
-            outfile = f'{outfile}_{fmode}'
+            if first:
+                outfile = f'{outfile}_{fmode}'
+                first = False
+            else:
+                outfile = outfile.replace(fmodes[i-1], fmode)
         try:
             fref, bw, nIF = getFreq(vex, station, fmode)
         except:
@@ -356,8 +365,9 @@ def main(args):
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                         scanNames, template)
+            print(f'Successfully written {outfile}.')
         except:
-            raise RunError(f'Could not create config file.')
+            print(f'Could not create config file for {source} observed with {station} in {fmode}.')
     return
         
         
