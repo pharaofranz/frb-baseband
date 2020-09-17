@@ -272,6 +272,8 @@ for scan in "${scans[@]}";do
     sleep 5
 done # end scans
 wait < <(jobs -p)
+# in the current setup ${target} might contain Ra and Dec; remove that first
+target=`echo ${target} | cut -d '-' -f1`
 # in case we look at a pulsar fold it and create a plot
 psrcat -e ${target} > ${target}.psrcat.par
 if [ $? -eq 0 ];then
