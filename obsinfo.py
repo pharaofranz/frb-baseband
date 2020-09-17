@@ -9,14 +9,19 @@ def options():
     parser = argparse.ArgumentParser()
     general = parser.add_argument_group('General info about the data.')
     general.add_argument('vexfile', type=str,
-                         help='vexfile used for the experiment')
+                         help='vexfile used for the experiment. If only the vexfile ' \
+                         'is supplied will print a summary of the experiment. '\
+                         'Running this the first time might take a while as a pandas dataframe is ' \
+                         'created from the SCHED section of the vexfile. This dataframe will be '\
+                         'written to disk (as pickle file) in the location of the vexfile. ' \
+                         'It will be named <vexfile>.df.')
     general.add_argument('-s', '--source', type=str, default=None,
-                         help='Source for which data are to be analysed.')
+                         help='Source for which the available scans are to be displayed.')
     general.add_argument('-t', '--telescope', type=str, default=None,
                          choices=['o8', 'o6', 'sr', 'wb', 'ef', 'tr', \
                                   'onsala85', 'onsala60', 'srt',\
                                   'wsrt', 'effelsberg', 'torun'],
-                         help='Station name or 2-letter code of dish to be searched.')
+                         help='Station name or 2-letter code of dish to be printed.')
     general.add_argument('-S', '--scans', nargs='+', default=None, type=int,
                          help='Optional list of scans to be looked at. By default will ' \
                          'return all scans. Scan numbers with or without leading zeros.')
