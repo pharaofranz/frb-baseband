@@ -2,23 +2,19 @@
 
 experiment=$1
 station=$2
-scans=$3
+scan=$3
 nif=$4
 mode=$5
-subscan=${6:-1}
-cal_length1=${7:-0}  #in seconds
-scanlength1=${8:-9999}  #in seconds 
-cal_length2=${9:-0}  #in seconds
-scanlength2=${10:-0}  #in seconds
-flipped=${11:-0} # recipes assume LO is below sky freq, if LO above sky freq LSB and USB are flipped
+skip=${6:-0}
+length=${7:-9999}  #in seconds
+scanname=${8:-${scan}}
+flipped=${9:-0} # recipes assume LO is below sky freq, if LO above sky freq LSB and USB are flipped
 
 vbs_fs_dir="${HOME}/vbs_data/${experiment}/"
 outdir1="/scratch0/${USER}/${experiment}"  
 outdir2="/scratch1/${USER}/${experiment}"
 linkdir="/tmp/${USER}/"
 cmd2flexbuff='/home/franz/git/frb-baseband/cmd2flexbuff_frb.py'
-
-subscan_length="${cal_length1} ${scanlength1} ${cal_length2} ${scanlength2}"
 
 if [[ ${mode} == 'VDIF_8000-4096-32-2' ]];then
     frames_per_second=64000
@@ -74,44 +70,37 @@ echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Using recipe ${recipe}"
 let nif=${nif}-2 # we actually do a plus 1 below and go in steps of two
 bytes_per_second=`echo "8032*${frames_per_second}" | bc`
 bytes_per_minute=`echo "${bytes_per_second}*60" | bc`
-for scan in $scans;do
-    vbs_fs_file=${experiment}"_${station}_no0"${scan}
-    start_frame=`vdif_print_headers ${vbs_fs_dir}/${vbs_fs_file} -n1 | tail -1 | tr "," " " | tr " " "|" | awk -F "|" '{print $5}'`
-    skipbytes=`echo "(${frames_per_second}-${start_frame}-1)*8032" | bc`
-    chunk=0
-    start_byte=${skipbytes}
-    for length in ${subscan_length};do
-	stop_byte=`echo "${start_byte}+${bytes_per_second}*${length}+16*8032" | bc`
-	if [[ $chunk -eq ${subscan} ]];then
-	    state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
-	    while [[ ${state} == 'active' ]];do
-		sleep 30
-		state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
-	    done
-	    for i in `seq 0 2 ${nif}`;do
-		let ii=$i+1
-		rm ${linkdir}/if_${i}
-		rm ${linkdir}/if_${ii}
-		let odd_if=$i+1
-		let even_if=$ii+1
-		ln -s ${outdir1}/${vbs_fs_file}_IF${odd_if}_s${chunk}.vdif ${linkdir}/if_${i}
-		ln -s ${outdir2}/${vbs_fs_file}_IF${even_if}_s${chunk}.vdif ${linkdir}/if_${ii}
-	    done
-	    ${cmd2flexbuff} \
-		"net_protocol=udpsnor:32000000:32000000:3; \
- spif2file=vdifsize:8000; \
- mode=${mode}; \
- spif2file=bitspersample:2; \
- spif2file=bitsperchannel:2; \
- spif2file=connect:${vbs_fs_dir}/${vbs_fs_file}:${recipe}=${linkdir}/if_{tag},w; \
- spif2file=on:${start_byte}:${stop_byte} "
-	    echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Splitting job for ${vbs_fs_file} submitted, waiting 30s."
-	    sleep 30
-	fi
-	start_byte=`echo "${stop_byte}-16*8032" | bc `
-	let chunk=${chunk}+1
-    done
+vbs_fs_file=${experiment}"_${station}_no0"${scan}
+vbs_vdif_file=${experiment}"_${station}_no0"${scanname}
+start_frame=`vdif_print_headers ${vbs_fs_dir}/${vbs_fs_file} -n1 | tail -1 | tr "," " " | tr " " "|" | awk -F "|" '{print $5}'`
+skipbytes=`echo "(${frames_per_second}-${start_frame}-1)*8032" | bc`
+skipbytes=`echo "${skipbytes}+${bytes_per_second}*${skip}" | bc`
+start_byte=${skipbytes}
+stop_byte=`echo "${start_byte}+${bytes_per_second}*${length}+16*8032" | bc`
+state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
+while [[ ${state} == 'active' ]];do
+    sleep 30
+    state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
 done
+for i in `seq 0 2 ${nif}`;do
+    let ii=$i+1
+    rm ${linkdir}/if_${i}
+    rm ${linkdir}/if_${ii}
+    let odd_if=$i+1
+    let even_if=$ii+1
+    ln -s ${outdir1}/${vbs_vdif_file}_IF${odd_if}.vdif ${linkdir}/if_${i}
+    ln -s ${outdir2}/${vbs_vdif_file}_IF${even_if}.vdif ${linkdir}/if_${ii}
+done
+${cmd2flexbuff} \
+    "net_protocol=udpsnor:32000000:32000000:3; \
+     spif2file=vdifsize:8000; \
+     mode=${mode}; \
+     spif2file=bitspersample:2; \
+     spif2file=bitsperchannel:2; \
+     spif2file=connect:${vbs_fs_dir}/${vbs_fs_file}:${recipe}=${linkdir}/if_{tag},w; \
+     spif2file=on:${start_byte}:${stop_byte} "
+echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Splitting job for ${vbs_fs_file} submitted, waiting 30s."
+sleep 30
 state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
 while [[ ${state} == 'active' ]];do
     sleep 10

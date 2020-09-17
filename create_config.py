@@ -8,7 +8,11 @@ def options():
     parser = argparse.ArgumentParser()
     general = parser.add_argument_group('General info about the data.')
     general.add_argument('vexfile', type=str,
-                         help='vexfile used for the experiment')
+                         help='vexfile used for the experiment. Script will ' \
+                         'create a pandas dataframe that contains the info '\
+                         'from the SCHED section in the vexfile. The dataframe ' \
+                         'will be created (and looked for) in the directory where ' \
+                         'where the vexfile lives. It will be named <vexfile>.df.')
     general.add_argument('-s', '--source', type=str, required=True,
                          help='REQUIRED. Source for which data are to be analysed.')
     general.add_argument('-t', '--telescope', type=str, required=True,
@@ -25,7 +29,8 @@ def options():
                          help='Downsampling factor for final filterbanks. Default '\
                          'is no downsampling.')
     general.add_argument('-o', '--outfile', type=str, default=None,
-                         help='Name of the config file. Per default will be named ' \
+                         help='Name of the output config file. Per default will be ' \
+                         'created in current working directory and will be named ' \
                          '<experiment>_<station>_<source>.conf[_<mode>], where ' \
                          '_<mode> will only be appended in case there a multiple '\
                          'frequency setups.')
@@ -207,9 +212,10 @@ def getScanList(df, source, station, mode, scans=None):
                            (df.station == station)].length_sec.item()
         skip_secs.append(skip_sec-1 if skip_sec > 0 else skip_sec)
         start_scans.append(f'{scan:03d}')
-    if not len(start_scans) == len(skip_secs) == len(scan_lengths):
+    scanNames = [f'{scan:03d}' for scan in list(ddf.scanNo.values)]
+    if not len(start_scans) == len(skip_secs) == len(scan_lengths) == len(scanNames):
         raise RunError('Not the same number of scans, seconds to skip and scan lengths.')
-    return start_scans, skip_secs, scan_lengths
+    return start_scans, skip_secs, scan_lengths, scanNames
     
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -240,7 +246,7 @@ class RunError(Error):
 def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
                 scans, skips, lengths,
-                template=None):
+                scanNames, template=None):
     templ = []
     if not template == None:
         if not os.path.exists(template):
@@ -257,6 +263,7 @@ def writeConfig(outfile, experiment, source, station,
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
     lengths = list2BashArray(lengths)
+    scanNames = list2BashArray(scanNames)
     station = fixStationName(station, short=False)
     templ.append(f'experiment={experiment}\n')
     templ.append(f'target=\"{source} --ra {ra} --dec {dec}\"\n')
@@ -264,6 +271,7 @@ def writeConfig(outfile, experiment, source, station,
     templ.append(f'scans={scans}\n')
     templ.append(f'skips={skips}\n')
     templ.append(f'lengths={lengths}\n')
+    templ.append(f'scannames={scanNames}\n')
     templ.append(f'freqLSB_0={fref-bw/2}\n')
     templ.append(f'bw={bw}\n')
     templ.append(f'nif={nIF}\n')
@@ -324,35 +332,42 @@ def main(args):
     print(f'Found experiment {experiment}.')
     fmodes = list(df.fmode.unique())
     print(f'There are {len(fmodes)} frequency modes: {fmodes}')
-    ra, dec = getSourceCoords(vex, args.source)
     source = args.source.replace('_D','').upper()
     station = args.telescope
     nchan = args.nchan
     downsamp = args.downsamp
     outfile = args.outfile
     template = args.template
+    ra, dec = getSourceCoords(vex, source)
     if outfile == None:
-        outfile = f'{sched_dir}/{experiment}_{station}_{source}.conf'
-    for fmode in fmodes:
+        outdir = os.getcwd()
+        outfile = f'{outdir}/{experiment}_{station}_{source}.conf'
+    first=True
+    for i,fmode in enumerate(fmodes):
         if len(fmodes) > 1:
-            outfile = f'{outfile}_{fmode}'
+            if first:
+                outfile = f'{outfile}_{fmode}'
+                first = False
+            else:
+                outfile = outfile.replace(fmodes[i-1], fmode)
         try:
             fref, bw, nIF = getFreq(vex, station, fmode)
         except:
             print(f'No setup for station {station} in mode {fmode}.')
             continue
         try:
-            scans, skips, lengths = getScanList(df, source,
-                                                station, fmode,
-                                                scans=args.scans)
+            scans, skips, lengths, scanNames = getScanList(df, source,
+                                                           station, fmode,
+                                                           scans=args.scans)
         except:
             print(f'Found no data for {source} for {station} in {fmode}.')
         try:
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                        template)
+                        scanNames, template)
+            print(f'Successfully written {outfile}.')
         except:
-            raise RunError(f'Could not create config file.')
+            print(f'Could not create config file for {source} observed with {station} in {fmode}.')
     return
         
         
