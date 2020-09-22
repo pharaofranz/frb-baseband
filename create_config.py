@@ -247,7 +247,25 @@ def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
                 scans, skips, lengths,
                 scanNames, template=None):
-    templ = []
+    conf = []
+    scans = list2BashArray(scans)
+    skips = list2BashArray(skips)
+    lengths = list2BashArray(lengths)
+    scanNames = list2BashArray(scanNames)
+    station = fixStationName(station, short=False)
+    conf.append(f'experiment={experiment}\n')
+    conf.append(f'target=\"{source} --ra {ra} --dec {dec}\"\n')
+    conf.append(f'station={station}\n')
+    conf.append(f'scans={scans}\n')
+    conf.append(f'skips={skips}\n')
+    conf.append(f'lengths={lengths}\n')
+    conf.append(f'scannames={scanNames}\n')
+    conf.append(f'freqLSB_0={fref-bw/2}\n')
+    conf.append(f'bw={bw}\n')
+    conf.append(f'nif={nIF}\n')
+    conf.append(f'nchan={nchan}\n')
+    conf.append(f'tscrunch={downsamp}\n')
+    conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
             raise InputError(f'The supplied template file {template} does not exist.')
@@ -255,30 +273,16 @@ def writeConfig(outfile, experiment, source, station,
         templ = f.readlines()
         f.close()
         params = ['experiment', 'target', 'scans', 'skips',
-                  'lenghts', 'freqLSB_0', 'bw', 'nif',
-                  'nchan', 'tscrunch', 'station']
+                  'lengths', 'freqLSB_0', 'bw', 'nif',
+                  'nchan', 'tscrunch', 'station', 'scannames']
         # we overwrite existing parameters
         delLines = [i for param in params for i,line in enumerate(templ) if param in line]
         templ = [line for i,line in enumerate(templ) if i not in delLines]
-    scans = list2BashArray(scans)
-    skips = list2BashArray(skips)
-    lengths = list2BashArray(lengths)
-    scanNames = list2BashArray(scanNames)
-    station = fixStationName(station, short=False)
-    templ.append(f'experiment={experiment}\n')
-    templ.append(f'target=\"{source} --ra {ra} --dec {dec}\"\n')
-    templ.append(f'station={station}\n')
-    templ.append(f'scans={scans}\n')
-    templ.append(f'skips={skips}\n')
-    templ.append(f'lengths={lengths}\n')
-    templ.append(f'scannames={scanNames}\n')
-    templ.append(f'freqLSB_0={fref-bw/2}\n')
-    templ.append(f'bw={bw}\n')
-    templ.append(f'nif={nIF}\n')
-    templ.append(f'nchan={nchan}\n')
-    templ.append(f'tscrunch={downsamp}\n')
-    with open(outfile, 'w') as f:
         for line in templ:
+            if not line == '\n':
+                conf.append(line) 
+    with open(outfile, 'w') as f:
+        for line in conf:
             f.write(line)
     return
     
