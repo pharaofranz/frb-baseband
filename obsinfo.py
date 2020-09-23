@@ -8,7 +8,7 @@ from create_config import vex2dic, sched2df, fixStationName
 def options():
     parser = argparse.ArgumentParser()
     general = parser.add_argument_group('General info about the data.')
-    general.add_argument('-i', 'vexfile', type=str, required=True,
+    general.add_argument('-i', '--vexfile', type=str, required=True,
                          help='REQUIRED. vexfile used for the experiment. If only the vexfile ' \
                          'is supplied will print a summary of the experiment. '\
                          'Running this the first time might take a while as a pandas dataframe is ' \
