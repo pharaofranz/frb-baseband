@@ -199,6 +199,9 @@ for scan in "${scans[@]}";do
     skip=${skips[${scancounter}]}
     length=${lengths[${scancounter}]}
     scanname=${scannames[${scancounter}]}
+    # make sure scan and scanname is a 3-digit-number with leading zeros
+    scan=`printf "%03g" ${scan}`
+    scanname=`printf "%03g" ${scanname}`
     vdif_files=""
     splice_list=''
     for i in `seq 1 2 ${nif}`;do
@@ -284,6 +287,8 @@ if [ $? -eq 0 ];then
     for scan in "${scans[@]}";do
 	let counter=${counter}+1
 	scanname=${scannames[${counter}]}
+	scan=`printf "%03g" ${scan}`
+	scanname=`printf "%03g" ${scanname}`
         filfile=${experiment}_${st}_no0${scanname}_IFall_vdif_pol${pol}.fil
         dspsr -E ${target}.psrcat.par -L 10 -A -k ${station} -d1 ${outdir}/${filfile} -O ${outdir}/${filfile} -t 8
         psrplot -pF -D /CPS -c x:unit=s ${outdir}/${filfile}.ar -j dedisperse,tscrunch,pscrunch,"fscrunch 128"
