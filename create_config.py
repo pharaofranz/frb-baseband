@@ -38,7 +38,9 @@ def options():
                          help='Template config file that contains parameters beyond '\
                          'those taken care of here. Existing parameters that this '\
                          'script takes care of will be overwritten.')
-    
+    general.add_argument('--debug', action='store_true',
+                         help='If set will raise errors to explain what went wrong instead '\
+                         'of just saying that something did not work.')
     return parser.parse_args()
 
 
@@ -71,7 +73,6 @@ def getFreq(vexdic, station, mode):
     '''
     lines = vexdic['MODE']
     station = fixStationName(station).capitalize()
-    mode = mode.upper()
     start_lineNums = [i for i,line in enumerate(lines) if line.startswith('def')]
     stop_lineNums = [i for i,line in enumerate(lines) if line.startswith('enddef')]
     for start_lineNum,stop_lineNum in zip(start_lineNums, stop_lineNums):
@@ -146,40 +147,46 @@ def sched2df(vexdic):
         first_station = True
         for lineNum in range(start_lineNum+1,stop_lineNum):
             line = lines[lineNum]
-            if line.startswith('start'):
-                start, mode, source, _ = line.split(';')
-                start = start.split('=')[1].strip()\
-                                           .replace('y',':')\
-                                           .replace('d',':')\
-                                           .replace('h',':')\
-                                           .replace('m',':')\
-                                           .replace('s','')
-                start = Time(start, format='yday', scale='utc').mjd
-                mode = mode.split('=')[1].strip()
-                source = source.split('=')[1].strip()\
-                                             .replace('_D','')
-                if first_scan:
-                    gap2previous = 0
+            # parameters can be either all in one line or one per line
+            # but always separated by ';' and ending on ';'
+            entries = line.split(';')
+            for entry in entries:
+                if 'start' in entry:
+                    start = entry.split('=')[1].strip()\
+                                               .replace('y',':')\
+                                               .replace('d',':')\
+                                               .replace('h',':')\
+                                               .replace('m',':')\
+                                               .replace('s','')
+                    start = Time(start, format='yday', scale='utc').mjd
+                    if first_scan:
+                        gap2previous = 0
+                    else:
+                        gap2previous = int((start - previous_stop) * 86400)
+                elif 'mode' in entry:
+                    mode = entry.split('=')[1].strip()
+                elif 'source' in entry:
+                    source = entry.split('=')[1].strip()\
+                                                 .replace('_D','')
+                elif 'station' in entry:
+                    station, missing_sec, length_sec = entry.split(':')[:3]
+                    station = station.split('=')[1].strip()
+                    missing_sec = int(missing_sec.split(' s')[0].strip())
+                    length_sec = int(length_sec.split(' s')[0].strip())
+                    if first_station:
+                        first_station = False
+                    else:
+                        if not length_tmp == length_sec:
+                            print(f'\nWARNING: Not all stations have the same scan length in scanNo {scanNo}.\n')
+                    length_tmp = length_sec
+                    scans = scans.append({'scanNo': scanNo, 't_startMJD': start,\
+                                          'gap2previous_sec': gap2previous, \
+                                          'length_sec': length_sec, 'missing_sec': missing_sec,\
+                                          'fmode': mode, 'source': source,
+                                          'station': station}, ignore_index=True)
                 else:
-                    gap2previous = int((start - previous_stop) * 86400)
-            elif line.startswith('station'):
-                station, missing_sec, length_sec = line.split(':')[:3]
-                station = station.split('=')[1].strip()
-                missing_sec = int(missing_sec.split(' s')[0].strip())
-                length_sec = int(length_sec.split(' s')[0].strip())
-                if first_station:
-                    first_station = False
-                else:
-                    if not length_tmp == length_sec:
-                        print(f'\nWARNING: Not all stations have the same scan length in scanNo {scanNo}.\n')
-                length_tmp = length_sec
-                scans = scans.append({'scanNo': scanNo, 't_startMJD': start,\
-                                      'gap2previous_sec': gap2previous, \
-                                      'length_sec': length_sec, 'missing_sec': missing_sec,\
-                                      'fmode': mode, 'source': source,
-                                      'station': station}, ignore_index=True)
-            else:
-                continue
+                    continue
+
         previous_stop = start + length_sec / 86400.
         first_scan = False
     return scans
@@ -190,7 +197,6 @@ def getScanList(df, source, station, mode, scans=None):
     returns three lists: scanNo's, number of seconds to skip 
     at the beginning of the scan, and number of secodns to process.
     '''
-    mode = mode.upper()
     station = fixStationName(station).capitalize()
     ddf = df[(df.source == source) &
              (df.fmode == mode) &
@@ -207,6 +213,8 @@ def getScanList(df, source, station, mode, scans=None):
         skip_sec = 0
         while df[(df.scanNo == scan) &
                  (df.station == station)].gap2previous_sec.item() < 10:
+            if scan == 1:
+                break
             scan -= 1
             skip_sec += df[(df.scanNo == scan) &
                            (df.station == station)].length_sec.item()
@@ -342,6 +350,7 @@ def main(args):
     downsamp = args.downsamp
     outfile = args.outfile
     template = args.template
+    debug = args.debug
     ra, dec = getSourceCoords(vex, source)
     if outfile == None:
         outdir = os.getcwd()
@@ -357,6 +366,8 @@ def main(args):
         try:
             fref, bw, nIF = getFreq(vex, station, fmode)
         except:
+            if debug:
+                raise RunError(f'No setup for station {station} in mode {fmode}.')
             print(f'No setup for station {station} in mode {fmode}.')
             continue
         try:
@@ -364,6 +375,8 @@ def main(args):
                                                            station, fmode,
                                                            scans=args.scans)
         except:
+            if debug:
+                raise RunError(f'Found no data for {source} for {station} in {fmode}.')
             print(f'Found no data for {source} for {station} in {fmode}.')
         try:
             writeConfig(outfile, experiment, source, station, ra, dec,
@@ -371,6 +384,8 @@ def main(args):
                         scanNames, template)
             print(f'Successfully written {outfile}.')
         except:
+            if debug:
+                raise RunError(f'Could not create config file for {source} observed with {station} in {fmode}.')
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
     return
         
