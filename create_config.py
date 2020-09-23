@@ -7,8 +7,8 @@ import pandas as pd
 def options():
     parser = argparse.ArgumentParser()
     general = parser.add_argument_group('General info about the data.')
-    general.add_argument('vexfile', type=str,
-                         help='vexfile used for the experiment. Script will ' \
+    general.add_argument('-i', 'vexfile', type=str, required=True,
+                         help='REQUIRED. vexfile used for the experiment. Script will ' \
                          'create a pandas dataframe that contains the info '\
                          'from the SCHED section in the vexfile. The dataframe ' \
                          'will be created (and looked for) in the directory where ' \
