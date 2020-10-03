@@ -210,7 +210,8 @@ for scan in "${scans[@]}";do
         vdif_files=${vdif_files}${vdifnme}" "
         if [ ! -f ${vdifnme} ];then
             msg "Splitting the VDIF."
-            ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} ${flipIF}
+            ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+			 ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1
     	fi
@@ -226,7 +227,8 @@ for scan in "${scans[@]}";do
         vdif_files=${vdif_files}${vdifnme}" "
         if [ ! -f ${vdifnme} ];then
             msg "Splitting the VDIF on Bogar for even IFs."
-            ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} ${flipIF}
+            ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+			 ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1
     	fi
