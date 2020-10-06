@@ -25,6 +25,11 @@ def options():
     general.add_argument('-S', '--scans', nargs='+', default=None, type=int,
                          help='Optional list of scans to be looked at. By default will ' \
                          'return all scans. Scan numbers with or without leading zeros.')
+    general.add_argument('--sources', action='store_true',
+                         help='if set will print all sources observed by telescope (-t has to be set)')
+    general.add_argument('--time_spent', action='store_true',
+                         help='computes the time on source for each sources obseved by telescope.'\
+                         '(-t and --sources need to be set)')
     return parser.parse_args()
 
 
@@ -63,6 +68,17 @@ def main(args):
         return
     elif args.source == args.scans == None:  # we print whatever Station station observed
         df = df[(df.station == station)]
+        if args.sources:
+            if args.time_spent:
+                sources = list(df.source.unique())
+                times = [df[(df.source == source)]['length_sec'].sum() -
+                         df[(df.source == source)]['missing_sec'].sum() for source in sources]
+                missing = [df[(df.source == source)]['missing_sec'].sum() for source in sources]
+                for source, time, miss in zip(sources, times, missing):
+                    print(f'{source}: {time} s = {time/60.:.2f} min = {time/60./60.:.2f} hrs')
+                    print(f'Recording but off source: {miss/60./60.:.2f} hrs')
+                return
+            df = df.source.unique()
         print(df)
         return
     elif args.telescope == args.scans == None: # we print when and who observed Source source
