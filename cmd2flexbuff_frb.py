@@ -2,22 +2,9 @@
 #
 # Python script to send individual commands to FILA10G & return result to FS log
 #
-# Example: ./cmd2FILA10G.py <ip> <port> <command>
-#          ./cmd2FILA10G.py 10.130.0.110 23 arp off   -- Onsala FILA10G, turn off arps
-#
 
-# kare
-#IP="129.16.208.51"
-#PORT=46091
-# bogar
-#IP="129.16.208.145"
-# ebur
-IP="129.16.208.57"
-PORT=2623
 
 import os
-#import time
-#import math
 import sys
 import socket
 
@@ -61,7 +48,8 @@ def sendRcv(conn,cmdstr):
 # Prepare and send commands to FILA10G
 def main(argv):
 	global _cmds
-
+        IP = os.environ['FLEXIP']
+        PORT = os.environ['FLEXPORT']
 	conn_TCP = True
 	conn_IPaddr = IP
 	conn_IPport = PORT
