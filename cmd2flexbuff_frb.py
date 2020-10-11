@@ -49,7 +49,7 @@ def sendRcv(conn,cmdstr):
 def main(argv):
 	global _cmds
         IP = os.environ['FLEXIP']
-        PORT = os.environ['FLEXPORT']
+        PORT = int(os.environ['FLEXPORT'])
 	conn_TCP = True
 	conn_IPaddr = IP
 	conn_IPport = PORT
