@@ -282,6 +282,12 @@ wait < <(jobs -p)
 # all whitespaces
 target=`echo ${target} | cut -d '-' -f1 | sed 's/ *$//'`
 
+# psrcat below will not throw an error on BSGR because it starts with B...
+# hence we exit here in case we are dealing with BSGR.
+if [[ ${target} == 'BSGR' ]];then
+    exit 0
+fi
+
 # in case we look at a pulsar fold it and create a plot
 psrcat -e ${target} > ${target}.psrcat.par
 if [ $? -eq 0 ];then
