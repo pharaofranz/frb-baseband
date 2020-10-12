@@ -116,7 +116,7 @@ def getSourceCoords(vexdic, source):
     start_lineNums = [i for i,line in enumerate(lines) if line.startswith('def')]
     stop_lineNums = [i for i,line in enumerate(lines) if line.startswith('enddef')]
     for start_lineNum,stop_lineNum in zip(start_lineNums, stop_lineNums):
-        if source in lines[start_lineNum]:
+        if f'{source};' in lines[start_lineNum]:
             for lineNum in range(start_lineNum+1,stop_lineNum):
                 line = lines[lineNum]
                 if 'dec' in line:
@@ -262,7 +262,7 @@ def writeConfig(outfile, experiment, source, station,
     scanNames = list2BashArray(scanNames)
     station = fixStationName(station, short=False)
     conf.append(f'experiment={experiment}\n')
-    conf.append(f'target=\"{source} --ra {ra} --dec {dec}\"\n')
+    conf.append(f'target=\"{source} --ra {ra} --dec={dec}\"\n')
     conf.append(f'station={station}\n')
     conf.append(f'scans={scans}\n')
     conf.append(f'skips={skips}\n')
