@@ -17,8 +17,9 @@ def options():
                          help='REQUIRED. Source for which data are to be analysed.')
     general.add_argument('-t', '--telescope', type=str, required=True,
                          choices=['o8', 'o6', 'sr', 'wb', 'ef', 'tr', \
-                                  'onsala85', 'onsala60', 'srt',\
-                                  'wsrt', 'effelsberg', 'torun'],
+                                  'ir', 'ib', 'mc', 'nt', 'onsala85', 'onsala60', 'srt',\
+                                  'wsrt', 'effelsberg', 'torun', 'irbene', 'irbene16',\
+                                  'medicina', 'noto'],
                          help='REQUIRED. Station name or 2-letter code of dish to be searched.')
     general.add_argument('-S', '--scans', nargs='+', default=None, type=int,
                          help='Optional list of scans to be searched. By default will ' \
@@ -116,7 +117,7 @@ def getSourceCoords(vexdic, source):
     start_lineNums = [i for i,line in enumerate(lines) if line.startswith('def')]
     stop_lineNums = [i for i,line in enumerate(lines) if line.startswith('enddef')]
     for start_lineNum,stop_lineNum in zip(start_lineNums, stop_lineNums):
-        if f'{source};' in lines[start_lineNum]:
+        if (f'{source};' in lines[start_lineNum]) or (f'{source}_D;' in lines[start_lineNum]):
             for lineNum in range(start_lineNum+1,stop_lineNum):
                 line = lines[lineNum]
                 if 'dec' in line:
@@ -316,8 +317,9 @@ def fixStationName(station, short=True):
     long version that is TEMPO2-compliant.
     '''
     station = station.lower()
-    longnames = ['onsala85', 'onsala60', 'srt', 'wsrt', 'effelsberg', 'torun']
-    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr']
+    longnames = ['onsala85', 'onsala60', 'srt', 'wsrt', 'effelsberg', 'torun',
+                 'irbene', 'irbene16', 'medicina', 'noto']
+    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 'ir', 'ib', 'mc', 'nt']
     if not (station in longnames) and not (station in shortnames):
         raise InputError(f'Station {station} not recognized. ' \
                          f'Must be any of {longnames} or {shortnames}')

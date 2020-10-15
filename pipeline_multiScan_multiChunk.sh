@@ -75,8 +75,8 @@ msg() {
     echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` ${1}"
 }
 get_station_code(){
-    stations='onsala85 onsala60 srt wsrt effelsberg torun'
-    sts=(o8 o6 sr wb ef tr)
+    stations='onsala85 onsala60 srt wsrt effelsberg torun irbene irbene16 medicina noto'
+    sts=(o8 o6 sr wb ef tr ir ib mc nt)
     station=$1
     station=${station,,} # set all to lower case
     c=0

@@ -19,8 +19,9 @@ def options():
                          help='Source for which the available scans are to be displayed.')
     general.add_argument('-t', '--telescope', type=str, default=None,
                          choices=['o8', 'o6', 'sr', 'wb', 'ef', 'tr', \
-                                  'onsala85', 'onsala60', 'srt',\
-                                  'wsrt', 'effelsberg', 'torun'],
+                                  'ir', 'ib', 'mc', 'nt', 'onsala85', 'onsala60', 'srt',\
+                                  'wsrt', 'effelsberg', 'torun', 'irbene', 'irbene16',\
+                                  'medicina', 'noto'],
                          help='Station name or 2-letter code of dish to be printed.')
     general.add_argument('-S', '--scans', nargs='+', default=None, type=int,
                          help='Optional list of scans to be looked at. By default will ' \
