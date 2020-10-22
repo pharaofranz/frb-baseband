@@ -209,14 +209,18 @@ def getScanList(df, source, station, mode, scans=None):
     scan_lengths = list(ddf.length_sec)
     skip_secs = []
     start_scans = []
-    for scanNo in list(ddf.scanNo.values):
+    scanNos = list(ddf.scanNo.values)
+    scanNos.sort()
+    for scanNo in scanNos:
         scan = scanNo
         skip_sec = 0
         while df[(df.scanNo == scan) &
                  (df.station == station)].gap2previous_sec.item() < 10:
-            if scan == 1:
-                break
+            # if we look at the first scan the above will always be true, leads to errors.
             scan -= 1
+            if df[(df.scanNo == scan) & (df.station == station)].empty:
+                scan += 1
+                break
             skip_sec += df[(df.scanNo == scan) &
                            (df.station == station)].length_sec.item()
         skip_secs.append(skip_sec-1 if skip_sec > 0 else skip_sec)
@@ -369,7 +373,7 @@ def main(args):
             fref, bw, nIF = getFreq(vex, station, fmode)
         except:
             if debug:
-                raise RunError(f'No setup for station {station} in mode {fmode}.')
+                fref, bw, nIF = getFreq(vex, station, fmode)
             print(f'No setup for station {station} in mode {fmode}.')
             continue
         try:
@@ -378,8 +382,11 @@ def main(args):
                                                            scans=args.scans)
         except:
             if debug:
-                raise RunError(f'Found no data for {source} for {station} in {fmode}.')
+                scans, skips, lengths, scanNames = getScanList(df, source,
+                                                               station, fmode,
+                                                               scans=args.scans)
             print(f'Found no data for {source} for {station} in {fmode}.')
+            continue
         try:
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
@@ -387,7 +394,9 @@ def main(args):
             print(f'Successfully written {outfile}.')
         except:
             if debug:
-                raise RunError(f'Could not create config file for {source} observed with {station} in {fmode}.')
+                writeConfig(outfile, experiment, source, station, ra, dec,
+                            fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
+                            scanNames, template)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
     return
         
