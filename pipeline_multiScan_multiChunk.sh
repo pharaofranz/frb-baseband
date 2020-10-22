@@ -275,6 +275,7 @@ for scan in "${scans[@]}";do
             msg "Fifos removed" &
     fi
     sleep 5
+    pwait $njobs_splice
 done # end scans
 wait < <(jobs -p)
 
