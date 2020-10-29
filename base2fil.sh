@@ -174,8 +174,6 @@ nbbc=`echo ${nif}*2 | bc | cut -d '.' -f1`
 frames_per_second=`echo ${datarate}*1000000/8/8000 | bc | cut -d '.' -f1`
 frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
 
-mode="VDIF_8000-${datarate}-${nbbc}-2"
-
 # nothing to change below this line
 freqUSB_0=`echo ${freqLSB_0}+${bw} | bc`  # central frequency of lowest USB channel (typically IF2)
 st=`get_station_code ${station}`
@@ -218,6 +216,15 @@ if [ ${n_baseband_files} -eq 1 ];then
     fi
 fi
 msg "There are ${n_baseband_files} baseband files in ${vbsdir}"
+
+test_file=`ls ${vbsdir} | head -1`
+msg "getting bytes_per_frame from ${test_file}"
+data_size=`vdif_print_headers ${vbsdir}/${test_file} -n1 | tail -1 | cut -d '=' -f9`
+bytes_per_frame=`echo ${data_size}-32 | bc` # this assumes non-legacy vdif
+mode="VDIF_${bytes_per_frame}-${datarate}-${nbbc}-2"
+frame_size=`echo ${bytes_per_frame}+16 | bc`   # in bytes; plus 16 since jive5ab spits out legacy VDIF headers.
+msg "will use ${mode}"
+msg "will assume frame_size=${frame_size} for split bands."
 
 scancounter=-1
 for scan in "${scans[@]}";do
