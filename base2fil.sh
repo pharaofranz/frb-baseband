@@ -1,5 +1,22 @@
 #!/bin/bash
 
+helpmsg() {
+    message='''
+    \n
+    This script takes a config file as input -- check out frb.conf that was shipped with this repo. \n
+    \n
+    Essentially, this script takes baseband data (i.e. raw voltages) stored on a Flexbuff in VDIF format \n
+    and converts those data to channelised filterbank files. It can generate either Stokes I, full polarisation \n
+    filterbanks or single polarisation data. Note that the script assumes circular polarisation as is common in \n
+    VLBI recordings.\n
+    \n
+    In case you have FETCH installed that is running with a rabbitmq-queue, then the filterbanks will we sent off\n
+    to that queue. I.e., this script can be used as an end-to-end pipeline to search for millisecond-duration \n
+    bright bursts such as giant pulses from pulsars or FRBs.\n
+    ''' 
+    echo -e $message
+}
+
 pwait() {
     # helper to parallelize jobs
     while [ $(jobs -p | wc -l) -ge $1 ]; do
@@ -99,7 +116,7 @@ get_station_code(){
 	fi
 	let c+=1
     done
-    if [ -z "$st" ]; then
+    if [[ -z "$st" ]]; then
 	echo "Station ${station} not known."
 	echo "Options are: (${stations})"
 	return 1
@@ -107,16 +124,15 @@ get_station_code(){
     echo $st
 }
 
+if [[ $1 == '-h' ]] || [[ -z "$1" ]];then
+    helpmsg
+    exit 0
+fi
+
 check_progs
 
-# intiate default vars
-target="R3 --ra 01:58:00.7495 --dec 65:43:00.3185"
-#target="B1933+16"
+# intiate some default vars
 
-freqLSB_0=1275.49  # central frequency of lowest LSB channel (typically IF1)
-bw=32.0            # bandwidth per IF
-station='Onsala85'  # relevant for folding data (station code for tempo2)
-experiment='pr999e'
 workdir_odd_base=/scratch0/${USER}/   #  vdif files expected to be here
 workdir_even_base=/scratch1/${USER}/
 outdir_base=/data1/${USER}/           # final downsampled filterbank file goes here
@@ -124,24 +140,20 @@ fifodir_base=/tmp/${USER}/
 vbsdir_base=${HOME}/vbs_data/    # baseband data is mounted here.
 start=0 #
 
-scans=( 001 002 )
-skips=( 0 0 )
-lengths=( 10 10 )
-scannames=( 001 002 )
-
-nchan=256       # number of channels in filterbank
-nif=8           # number of subbands in the data, 16 at OSO at 4G recording, 8 at Tr or Sr at 2G recording
 pol=2           # if set to 2 will create stokes I 
                 # if set to either 0 or 1 will process only one polarisation
-tscrunch=8      # downsampling factor for digil (final filterbank)
 digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sensitivity...
 frame_size=8016        # in bytes
 flipIF=0
 njobs_parallel=20
 submit2fetch=1  # if equal to zero will not submit the filterbanks to fetch
 
-# load vars from config file
+# load other vars from config file, params above will be overwritten if they are in the config file
 source ${1}
+if [[ $? -eq 1 ]];then
+    helpmsg
+    exit 1
+fi
 
 # run parse_vex.py with input from ${1}
 # parse_vex.py takes config files and appends necessary info.
