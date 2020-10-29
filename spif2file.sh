@@ -14,7 +14,17 @@ vbs_fs_dir=${10:-"${HOME}/vbs_data/${experiment}/"}
 outdir1=${11:-"/scratch0/${USER}/${experiment}"}
 outdir2=${12:-"/scratch1/${USER}/${experiment}"}
 linkdir="/tmp/${USER}/"
-cmd2flexbuff='/home/franz/git/frb-baseband/cmd2flexbuff_frb.py'
+
+directs="${outdir1} ${outdir2} ${linkdir}"
+for dir in $directs;do
+    if ! [ -d ${dir} ];then
+	mkdir -p ${dir}
+	if [[ $? -eq 1 ]];then
+	    echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Could not create non-existend directory ${dir}. Aborting."
+	    exit 1
+	fi
+    fi
+done
 
 if [[ ${mode} == 'VDIF_8000-4096-32-2' ]];then
     frames_per_second=64000
@@ -77,10 +87,10 @@ skipbytes=`echo "(${frames_per_second}-${start_frame}-1)*8032" | bc`
 skipbytes=`echo "${skipbytes}+${bytes_per_second}*${skip}" | bc`
 start_byte=${skipbytes}
 stop_byte=`echo "${start_byte}+${bytes_per_second}*${length}+16*8032" | bc`
-state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
+state=`cmd2flexbuff "spif2file?" | awk '{print $5}'`
 while [[ ${state} == 'active' ]];do
     sleep 30
-    state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
+    state=`cmd2flexbuff "spif2file?" | awk '{print $5}'`
 done
 for i in `seq 0 2 ${nif}`;do
     let ii=$i+1
@@ -91,7 +101,7 @@ for i in `seq 0 2 ${nif}`;do
     ln -s ${outdir1}/${vbs_vdif_file}_IF${odd_if}.vdif ${linkdir}/if_${i}
     ln -s ${outdir2}/${vbs_vdif_file}_IF${even_if}.vdif ${linkdir}/if_${ii}
 done
-${cmd2flexbuff} \
+cmd2flexbuff \
     "net_protocol=udpsnor:32000000:32000000:3; \
      spif2file=vdifsize:8000; \
      mode=${mode}; \
@@ -101,10 +111,10 @@ ${cmd2flexbuff} \
      spif2file=on:${start_byte}:${stop_byte} "
 echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Splitting job for ${vbs_fs_file} submitted, waiting 30s."
 sleep 30
-state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
+state=`cmd2flexbuff "spif2file?" | awk '{print $5}'`
 while [[ ${state} == 'active' ]];do
     sleep 10
-    state=`${cmd2flexbuff} "spif2file?" | awk '{print $5}'`
+    state=`cmd2flexbuff "spif2file?" | awk '{print $5}'`
 done
 
 
