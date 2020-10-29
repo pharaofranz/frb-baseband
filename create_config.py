@@ -357,7 +357,13 @@ def main(args):
     outfile = args.outfile
     template = args.template
     debug = args.debug
-    ra, dec = getSourceCoords(vex, source)
+    try:
+        ra, dec = getSourceCoords(vex, source)
+    except:
+        if debug:
+            ra, dec = getSourceCoords(vex, source)
+        print(f'Could not get RA and Dec for {source}. Maybe not in observations? Check with obsinfo.py.')
+        quit()
     if outfile == None:
         outdir = os.getcwd()
         outfile = f'{outdir}/{experiment}_{station}_{source}.conf'
