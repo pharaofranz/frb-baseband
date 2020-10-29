@@ -13,6 +13,8 @@ helpmsg() {
     In case you have FETCH installed that is running with a rabbitmq-queue, then the filterbanks will we sent off\n
     to that queue. I.e., this script can be used as an end-to-end pipeline to search for millisecond-duration \n
     bright bursts such as giant pulses from pulsars or FRBs.\n
+    \n
+    In case you observed a known pulsar then the data will be folded and a diagnostic plot will be generated.\n
     ''' 
     echo -e $message
 }
@@ -146,7 +148,7 @@ digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sens
 frame_size=8016        # in bytes
 flipIF=0
 njobs_parallel=20
-submit2fetch=1  # if equal to zero will not submit the filterbanks to fetch
+submit2fetch=0  # if equal to zero will not submit the filterbanks to fetch
 
 # load other vars from config file, params above will be overwritten if they are in the config file
 source ${1}
