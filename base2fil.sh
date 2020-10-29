@@ -32,11 +32,22 @@ run_process_vdif() {
     bandstep=`echo $bw+$bw | bc`
 
     for i in ${ifs};do
-        /home/franz/git/frb-baseband/process_vdif.py ${source} ${workdir}/${experiment}_${st}_no0${scanname}_IF${i}.vdif  \
-                                            -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
-                                            --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} --fil_out_dir ${fifodir} & sleep 0.2
+        process_vdif ${source} ${workdir}/${experiment}_${st}_no0${scanname}_IF${i}.vdif  \
+                     -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
+                     --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} --fil_out_dir ${fifodir} & sleep 0.2
         pwait $njobs
         freqEdge=`echo $freqEdge+$bandstep | bc`
+    done
+}
+
+check_progs() {
+    progs='process_vdif spif2file cmd2flexbuff setfifo'
+    for prog in $progs; do
+	which $prog
+	if [[ $? -eq 1 ]];then
+	    echo "Could not find ${prog} in your PATH. Aborting."
+	    exit 1
+	fi
     done
 }
 
@@ -96,6 +107,8 @@ get_station_code(){
     echo $st
 }
 
+check_progs
+
 # intiate default vars
 target="R3 --ra 01:58:00.7495 --dec 65:43:00.3185"
 #target="B1933+16"
@@ -142,7 +155,6 @@ outdir=${outdir_base}/${experiment}           # final downsampled filterbank fil
 fifodir=${fifodir_base}/fifos/
 vbsdir=${vbsdir_base}/${experiment}    # baseband data is mounted here.
 
-spif2file='/usr/local/bin/spif2file_2chunk'
 datarate=`echo $bw*$nif*8 | bc | cut -d '.' -f1` # bw in MHz, 8 = 2pol*2bitsamples*2nyquist
 nbbc=`echo ${nif}*2 | bc | cut -d '.' -f1`
 frames_per_second=`echo ${datarate}*1000000/8/8000 | bc | cut -d '.' -f1`
@@ -210,8 +222,8 @@ for scan in "${scans[@]}";do
         vdif_files=${vdif_files}${vdifnme}" "
         if [ ! -f ${vdifnme} ];then
             msg "Splitting the VDIF."
-            ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
-			 ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
+            spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1
     	fi
@@ -227,8 +239,8 @@ for scan in "${scans[@]}";do
         vdif_files=${vdif_files}${vdifnme}" "
         if [ ! -f ${vdifnme} ];then
             msg "Splitting the VDIF on Bogar for even IFs."
-            ${spif2file} ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
-			 ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
+            spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1
     	fi
@@ -257,7 +269,7 @@ for scan in "${scans[@]}";do
     filfile=${experiment}_${st}_no0${scanname}_IFall_vdif_pol${pol}.fil
     # increase the fifo buffer size to speed things up, but wait till splice is running first
     sleep 2 && for filfifo in ${splice_list}; do \
-        /home/franz/git/frb-baseband/setfifo.perl ${filfifo} 1048576; \
+        setfifo ${filfifo} 1048576; \
         sleep 0.2;done && msg "Changed fifo sizes successfuly." &
     if [[ $submit2fetch -ne 0 ]]; then
 	splice ${splice_list} > ${outdir}/${filfile} && \
