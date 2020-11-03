@@ -10,8 +10,8 @@ install:
 	cp process_vdif.py $(INSTALLDIR)/process_vdif ; chmod u+x,g+x,o+x $(INSTALLDIR)/process_vdif
 	cp cmd2flexbuff.py $(INSTALLDIR)/cmd2flexbuff ; chmod u+x,g+x,o+x $(INSTALLDIR)/cmd2flexbuff
 	cp spif2file.sh $(INSTALLDIR)/spif2file ; chmod u+x,g+x,o+x $(INSTALLDIR)/spif2file
-	cp create_config.py $(INSTALLDIR)/create_config ;  chmod u+x,g+x,o+x $(INSTALLDIR)/create_config.py
-	cp obsinfo.py $(INSTALLDIR)/obsinfo ;  chmod u+x,g+x,o+x $(INSTALLDIR)/obsinfo.py
+	cp create_config.py $(INSTALLDIR)/create_config.py ;  chmod u+x,g+x,o+x $(INSTALLDIR)/create_config.py
+	cp obsinfo.py $(INSTALLDIR)/obsinfo.py ;  chmod u+x,g+x,o+x $(INSTALLDIR)/obsinfo.py
 
 clean:
 	rm -f $(INSTALLDIR)/base2fil
