@@ -24,8 +24,16 @@ def options():
                          help='Station name or 2-letter code of dish(es) to be checked.')
     general.add_argument('-e', '--experiments', default=None, nargs='+', type=str,
                          help='Name(s) of experiment(s) to check.')
-    general.add_argument('--withoverlap', action='store_true',
-                         help='if set will spit out the time on source including overlap btw. stations')
+    general.add_argument('-v', '--verbose', action='store_true',
+                         help='if set will print a bit more info, including the names of experiments that had data.')
+    general.add_argument('--mjd_min', default=None, type=float,
+                         help='Only entries after mjd_min will be considered. Can be combined with mjd_max.')
+    general.add_argument('--mjd_max', default=None, type=float,
+                         help='Only entries before mjd_max will be considered. Can be combined with mjd_min.')
+    general.add_argument('--freq_min', default=None, type=float,
+                         help='Only entries above freq_min MHz will be considered. Can be combined with freq_max.')
+    general.add_argument('--freq_max', default=None, type=float,
+                         help='Only entries below freq_max MHz will be considered. Can be combined with freq_min.')
     return parser.parse_args()
 
 
@@ -57,25 +65,48 @@ def main(args):
     stations = args.telescopes
     source = args.source
     exps = args.experiments
+    mjd_min = args.mjd_min
+    mjd_max = args.mjd_max
+    freq_min = args.freq_min
+    freq_max = args.freq_max
 
     revert_stations_to_none = True
     if stations is not None:
-        # case a)
         revert_stations_to_none = False
         df = df[(df.station.isin(stations))]
         if df.empty:
             print(f'No data for stations {stations}.')
             quit(1)
     if source is not None:
-        # case a) & c) & d)
         df = df[(df.source == source)]
         if df.empty:
             print(f'No data for source {source}.')
             quit(1)
             #return df.length_sec.sum() - df.missing_sec.sum()
+    if mjd_min is not None:
+        df = df[(df.t_startMJD >= mjd_min)]
+        if df.empty:
+            print(f'No data after {mjd_min}.')
+            quit(1)
+    if mjd_max is not None:
+        df = df[(df.t_startMJD <= mjd_max)]
+        if df.empty:
+            print(f'No data before {mjd_max}.')
+            quit(1)
+    if freq_max is not None:
+        df = df[(df.RefFreq_MHz <= freq_max)]
+        if df.empty:
+            print(f'No data below {freq_max} MHz.')
+            quit(1)
+    if freq_min is not None:
+        df = df[(df.RefFreq_MHz >= freq_min)]
+        if df.empty:
+            print(f'No data above {freq_min} MHz.')
+            quit(1)
     totalT = 0
     T_onSource = 0
     T_onSource_noOverlap = 0
+    exp_list = []
 
     # we go through all experiments and scans, using the range between
     # the lowest t_startMJD and the largest t_startMJD+length_sec(t_startMJD);
@@ -100,9 +131,12 @@ def main(args):
         starts = np.array(ddf.t_startMJD)
         if len(starts) <= 2:
             print(f'Only {len(starts)} scans in experiment {exp}. Assuming these are dummy scans and skipping.')
+            if revert_stations_to_none is True:
+                stations = None
             continue
         # we compute the time diff between start times and disgard those
         # that are followed by a gap lasting more than 2 hours
+        exp_list.append(exp)
         mask = np.diff(starts, append=starts[-1])*24. < 2.
         start_mjds = np.array(starts[mask])
         end_mjds = np.array(start_mjds + ddf.length_sec[mask] / 86400)
@@ -117,6 +151,8 @@ def main(args):
 
         if revert_stations_to_none is True:
             stations = None
+    if args.verbose:
+        print(f'Found data in experiments {exp_list}')
     print(f'I get {totalT * 24:.2f}hrs of telescope time')
     print(f'I get {T_onSource / 3600:.2f}hrs on source in total.')
     print(f'I get {T_onSource_noOverlap * 24:.2f}hrs on source taking overlap out.')
