@@ -266,7 +266,7 @@ def writeConfig(outfile, experiment, source, station,
     lengths = list2BashArray(lengths)
     scanNames = list2BashArray(scanNames)
     station = fixStationName(station, short=False)
-    conf.append(f'experiment={experiment}\n')
+    conf.append(f'experiment={experiment.lower()}\n')
     conf.append(f'target=\"{source} --ra {ra} --dec={dec}\"\n')
     conf.append(f'station={station}\n')
     conf.append(f'scans={scans}\n')
