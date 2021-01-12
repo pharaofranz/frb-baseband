@@ -41,7 +41,7 @@ def options():
                          'script takes care of will be overwritten.')
     general.add_argument('--search', action='store_true',
                          help='If set will set the flag to submit the created filterbanks '\
-                         'to FETCH.'
+                         'to FETCH.')
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
@@ -364,6 +364,7 @@ def main(args):
     outfile = args.outfile
     template = args.template
     debug = args.debug
+    search = args.search
     try:
         ra, dec = getSourceCoords(vex, source)
     except:
@@ -403,14 +404,15 @@ def main(args):
         try:
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                        scanNames, template)
+                        scanNames, template, search)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                            scanNames, template)
+                            scanNames, template, search)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
+        print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return
         
         
