@@ -39,6 +39,9 @@ def options():
                          help='Template config file that contains parameters beyond '\
                          'those taken care of here. Existing parameters that this '\
                          'script takes care of will be overwritten.')
+    general.add_argument('--search', action='store_true',
+                         help='If set will set the flag to submit the created filterbanks '\
+                         'to FETCH.'
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
@@ -259,7 +262,7 @@ class RunError(Error):
 def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
                 scans, skips, lengths,
-                scanNames, template=None):
+                scanNames, template=None, search=False):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -278,6 +281,8 @@ def writeConfig(outfile, experiment, source, station,
     conf.append(f'nif={nIF}\n')
     conf.append(f'nchan={nchan}\n')
     conf.append(f'tscrunch={downsamp}\n')
+    if search:
+        conf.append(f'submit2fetch=1\n')
     conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
@@ -288,6 +293,8 @@ def writeConfig(outfile, experiment, source, station,
         params = ['experiment', 'target', 'scans', 'skips',
                   'lengths', 'freqLSB_0', 'bw', 'nif',
                   'nchan', 'tscrunch', 'station', 'scannames']
+        if search:
+            params.append('submit2fetch')
         # we overwrite existing parameters
         delLines = [i for param in params for i,line in enumerate(templ) if param in line]
         templ = [line for i,line in enumerate(templ) if i not in delLines]
