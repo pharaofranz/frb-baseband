@@ -39,6 +39,9 @@ def options():
                          help='Template config file that contains parameters beyond '\
                          'those taken care of here. Existing parameters that this '\
                          'script takes care of will be overwritten.')
+    general.add_argument('-N', '--njobs', type=int, default=20,
+                         help='Number of jobs to run in parallel. Needs to be at least '\
+                         'nIF+1. Default=%(default)s.')
     general.add_argument('--search', action='store_true',
                          help='If set will set the flag to submit the created filterbanks '\
                          'to FETCH.')
@@ -262,7 +265,7 @@ class RunError(Error):
 def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
                 scans, skips, lengths,
-                scanNames, template=None, search=False):
+                scanNames, template=None, search=False, njobs=20):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -281,6 +284,7 @@ def writeConfig(outfile, experiment, source, station,
     conf.append(f'nif={nIF}\n')
     conf.append(f'nchan={nchan}\n')
     conf.append(f'tscrunch={downsamp}\n')
+    conf.append(f'njobs_parallel={njobs}\n')
     if search:
         conf.append(f'submit2fetch=1\n')
     conf.append('\n')
@@ -291,7 +295,7 @@ def writeConfig(outfile, experiment, source, station,
         templ = f.readlines()
         f.close()
         params = ['experiment', 'target', 'scans', 'skips',
-                  'lengths', 'freqLSB_0', 'bw', 'nif',
+                  'lengths', 'freqLSB_0', 'bw', 'nif', 'njobs_parallel',
                   'nchan', 'tscrunch', 'station', 'scannames']
         if search:
             params.append('submit2fetch')
@@ -365,6 +369,7 @@ def main(args):
     template = args.template
     debug = args.debug
     search = args.search
+    njobs = args.njobs
     try:
         ra, dec = getSourceCoords(vex, source)
     except:
@@ -404,13 +409,13 @@ def main(args):
         try:
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                        scanNames, template, search)
+                        scanNames, template, search, njobs)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                            scanNames, template, search)
+                            scanNames, template, search, njobs)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return
