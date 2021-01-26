@@ -3,10 +3,10 @@ The file base2fil.sh is the wrapper script around all the rest. This is also whe
 different I/O-directories can be set with default values. This is not strictly required as
 all of these directories can also be set via the config script at run time (see frb.conf for a
 description of all the possible parameters and their meaning). The variables of interest and their
-default values are the following:
+default values are the following:  
 
-workdir_odd_base=/scratch0/${USER}/   # vdif files are split into subbands by jive5ab, odd IFs go here
-workdir_even_base=/scratch1/${USER}/  # even IFs go here; can be the same as $workdir_odd_base;
+workdir_odd_base=/scratch0/${USER}/   # vdif files are split into subbands by jive5ab, odd IFs go here  
+workdir_even_base=/scratch1/${USER}/  # even IFs go here; can be the same as $workdir_odd_base;  
 outdir_base=/data1/${USER}/           # final downsampled filterbank file goes here
 fifodir_base=/tmp/${USER}/            # the pipeline works with fifos to limit I/O. Leaving as is should work
 vbsdir_base=${HOME}/vbs_data/         # baseband data is mounted here with vbs_fs. Should work as is.
