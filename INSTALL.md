@@ -26,7 +26,8 @@ FLEXIP -- that's the IP address of the machine where jive5ab is running
 FLEXPORT -- the communication port that particular jive5ab instance is listening on  
 
 ## DSPSR
-1. In the top level directory of dspsr, create the file backends.list. It needs to contain the following line:
+1. In the top level directory of dspsr, create the file backends.list. It needs to contain
+(at least) the following in one line:  
 sigproc fits vdif
 2. Modify the file ./Kernel/Classes/OutputFile.C  You'll need to change line 69 in the following way:  
 int oflag = O_WRONLY | O_CREAT | O_TRUNC | O_EXCL;  --> int oflag = O_WRONLY | O_CREAT | O_TRUNC ;
