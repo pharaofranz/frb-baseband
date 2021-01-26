@@ -60,7 +60,7 @@ run_process_vdif() {
 }
 
 check_progs() {
-    progs='process_vdif spif2file cmd2flexbuff setfifo'
+    progs='process_vdif spif2file cmd2flexbuff setfifo bc vdif_print_headers splice digifil'
     for prog in $progs; do
 	which $prog
 	if [[ $? -eq 1 ]];then
@@ -69,6 +69,16 @@ check_progs() {
 	fi
     done
 }
+
+check_vars() {
+    if [[ -z ${FLEXIP} ]] || [[ -z ${FLEXPORT} ]];then
+	echo "You need to set environment variables FLEXIP and FLEXPORT."
+	echo "FLEXIP is the IP address of the machine where jive5ab is running."
+	echo "FLEXPORT is the port that instance of jive5ab is listening on."
+	exit 1
+    fi
+}
+	   
 
 compare_size() {
     # takes a list of files and compares their sizes
@@ -132,6 +142,7 @@ if [[ $1 == '-h' ]] || [[ -z "$1" ]];then
 fi
 
 check_progs
+check_vars
 
 # intiate some default vars
 
