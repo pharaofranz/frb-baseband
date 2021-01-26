@@ -29,8 +29,10 @@ FLEXPORT -- the communication port that particular jive5ab instance is listening
 1. In the top level directory of dspsr, create the file backends.list. It needs to contain
 (at least) the following in one line:  
 sigproc fits vdif
-2. Modify the file ./Kernel/Classes/OutputFile.C  You'll need to change line 69 in the following way:  
-int oflag = O_WRONLY | O_CREAT | O_TRUNC | O_EXCL;  --> int oflag = O_WRONLY | O_CREAT | O_TRUNC ;
+2. Modify the file ./Kernel/Classes/OutputFile.C  You'll need to change line 69 from:  
+int oflag = O_WRONLY | O_CREAT | O_TRUNC | O_EXCL; 
+to  
+int oflag = O_WRONLY | O_CREAT | O_TRUNC;
 3. Build dspsr
 4. In case digifil complains that "Your ipol (1) was >= npol (1)" you may need to rewind dspsr and psrchive to
 an earlier commit, namely for dspsr to commit b68528e15e8 and, to be on the safe side, you'd also need rewind
