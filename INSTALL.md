@@ -30,7 +30,7 @@ FLEXPORT -- the communication port that particular jive5ab instance is listening
 (at least) the following in one line:  
 sigproc fits vdif
 2. Modify the file ./Kernel/Classes/OutputFile.C  You'll need to change line 69 from:  
-int oflag = O_WRONLY | O_CREAT | O_TRUNC | O_EXCL; 
+int oflag = O_WRONLY | O_CREAT | O_TRUNC | O_EXCL;  
 to  
 int oflag = O_WRONLY | O_CREAT | O_TRUNC;
 3. Build dspsr
