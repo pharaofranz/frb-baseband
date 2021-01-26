@@ -92,10 +92,12 @@ def getFreq(vexdic, station, mode):
                     n_if, bw = f_info[1].split('x')
                     n_if = str(int(n_if) // 2)
                     bw = float(bw)
-                    break
+                if ('$IF' in line) and (station in line):
+                    LO = float(line.split('@')[1].split('MHz')[0].strip())
             break
     try:
-        return f_ref, bw, n_if
+        flipIF = True if LO > f_ref else False
+        return f_ref, bw, n_if, flipIF
     except:
         raise RunError(f'Could not determine Frequency setup for {station} in {mode}.')
 
@@ -264,8 +266,8 @@ class RunError(Error):
 
 def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
-                scans, skips, lengths,
-                scanNames, template=None, search=False, njobs=20):
+                scans, skips, lengths, scanNames,
+                template=None, search=False, njobs=20, flipIF=False):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -287,6 +289,8 @@ def writeConfig(outfile, experiment, source, station,
     conf.append(f'njobs_parallel={njobs}\n')
     if search:
         conf.append(f'submit2fetch=1\n')
+    if flipIF:
+        conf.append(f'flipIF=1\n')
     conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
@@ -299,6 +303,8 @@ def writeConfig(outfile, experiment, source, station,
                   'nchan', 'tscrunch', 'station', 'scannames']
         if search:
             params.append('submit2fetch')
+        if flipIF:
+            params.append('flipIF')
         # we overwrite existing parameters
         delLines = [i for param in params for i,line in enumerate(templ) if param in line]
         templ = [line for i,line in enumerate(templ) if i not in delLines]
@@ -389,10 +395,10 @@ def main(args):
             else:
                 outfile = outfile.replace(fmodes[i-1], fmode)
         try:
-            fref, bw, nIF = getFreq(vex, station, fmode)
+            fref, bw, nIF, flipIF = getFreq(vex, station, fmode)
         except:
             if debug:
-                fref, bw, nIF = getFreq(vex, station, fmode)
+                fref, bw, nIF, flipIF = getFreq(vex, station, fmode)
             print(f'No setup for station {station} in mode {fmode}.')
             continue
         try:
@@ -409,13 +415,13 @@ def main(args):
         try:
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                        scanNames, template, search, njobs)
+                        scanNames, template, search, njobs, flipIF)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                            scanNames, template, search, njobs)
+                            scanNames, template, search, njobs, flipIF)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return
