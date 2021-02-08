@@ -129,6 +129,7 @@ get_header_size(){
     else
 	msg "Unknown legacy parameter: ${legacy}. Aborting."
 	exit 1
+    fi
 }
 
 get_station_code(){
@@ -313,7 +314,7 @@ for scan in "${scans[@]}";do
     
     frames_per_second=`echo ${datarate}*1000000/8/${bytes_per_frame_split} | bc | cut -d '.' -f1`
     frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
-    nsec=`echo "${file_size}/${frame_size}/${frames_per_second_per_band}" | bc`
+    nsec=`echo "${file_size}/${frame_size_split}/${frames_per_second_per_band}" | bc`
     run_process_vdif $scanname "$ifs_odd" "$target" $experiment $st $freqLSB_0 $bw l $nchan $nsec $start \
                       $station $njobs_splice $skip $workdir_odd $pol $digifil_nthreads $tscrunch ${fifodir}
     # even IFs (i.e. USB)
