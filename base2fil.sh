@@ -114,6 +114,23 @@ submit_fetch() {
 msg() {
     echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` ${1}"
 }
+
+get_frame_size(){
+    frame_size=`vdif_print_headers ${1} -n1 | tail -1 | cut -d '=' -f9`
+    echo ${frame_size}
+}
+
+get_header_size(){
+    legacy=`vdif_print_headers ${1} -n1 | tail -1 | cut -d ',' -f6`
+    if [[ ${legacy} -eq 'legacy = 0' ]]; then
+	echo 32
+    elif [[ ${legacy} -eq 'legacy = 1' ]]; then
+	echo 16
+    else
+	msg "Unknown legacy parameter: ${legacy}. Aborting."
+	exit 1
+}
+
 get_station_code(){
     stations='onsala85 onsala60 srt wsrt effelsberg torun irbene irbene16 medicina noto'
     sts=(o8 o6 sr wb ef tr ir ib mc nt)
@@ -156,7 +173,6 @@ start=0 #
 pol=2           # if set to 2 will create stokes I 
                 # if set to either 0 or 1 will process only one polarisation
 digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sensitivity...
-frame_size=8016        # in bytes
 flipIF=0
 njobs_parallel=20
 submit2fetch=0  # if equal to zero will not submit the filterbanks to fetch
@@ -180,12 +196,10 @@ outdir=${outdir_base}/${experiment}           # final downsampled filterbank fil
 fifodir=${fifodir_base}/fifos/
 vbsdir=${vbsdir_base}/${experiment}    # baseband data is mounted here.
 
+# nothing to change below this line
 datarate=`echo $bw*$nif*8 | bc | cut -d '.' -f1` # bw in MHz, 8 = 2pol*2bitsamples*2nyquist
 nbbc=`echo ${nif}*2 | bc | cut -d '.' -f1`
-frames_per_second=`echo ${datarate}*1000000/8/8000 | bc | cut -d '.' -f1`
-frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
 
-# nothing to change below this line
 freqUSB_0=`echo ${freqLSB_0}+${bw} | bc`  # central frequency of lowest USB channel (typically IF2)
 st=`get_station_code ${station}`
 if [[ $? -eq 1 ]];then
@@ -230,12 +244,13 @@ msg "There are ${n_baseband_files} baseband files in ${vbsdir}"
 
 test_file=`ls ${vbsdir} | head -1`
 msg "getting bytes_per_frame from ${test_file}"
-data_size=`vdif_print_headers ${vbsdir}/${test_file} -n1 | tail -1 | cut -d '=' -f9`
-bytes_per_frame=`echo ${data_size}-32 | bc` # this assumes non-legacy vdif
+
+frame_size=`get_frame_size ${vbsdir}/${test_file}`
+headersize=`get_header_size ${vbsdir}/${test_file}`
+
+bytes_per_frame=`echo ${frame_size}-${headersize} | bc` 
 mode="VDIF_${bytes_per_frame}-${datarate}-${nbbc}-2"
-frame_size=`echo ${bytes_per_frame}+16 | bc`   # in bytes; plus 16 since jive5ab spits out legacy VDIF headers.
 msg "will use ${mode}"
-msg "will assume frame_size=${frame_size} for split bands."
 
 scancounter=-1
 for scan in "${scans[@]}";do
@@ -291,6 +306,13 @@ for scan in "${scans[@]}";do
         exit 1
     fi
     file_size=`ls -l ${vdifnme} | cut -d ' ' -f 5`
+
+    frame_size_split=`get_frame_size ${vdifnme}`
+    headersize_split=`get_header_size ${vdifnme}`
+    bytes_per_frame_split=`echo ${frame_size_split}-${headersize_split} | bc`
+    
+    frames_per_second=`echo ${datarate}*1000000/8/${bytes_per_frame_split} | bc | cut -d '.' -f1`
+    frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
     nsec=`echo "${file_size}/${frame_size}/${frames_per_second_per_band}" | bc`
     run_process_vdif $scanname "$ifs_odd" "$target" $experiment $st $freqLSB_0 $bw l $nchan $nsec $start \
                       $station $njobs_splice $skip $workdir_odd $pol $digifil_nthreads $tscrunch ${fifodir}
