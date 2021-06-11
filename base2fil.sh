@@ -48,12 +48,14 @@ run_process_vdif() {
     nthreads=${17}
     tscrunch=${18}
     fifodir=${19}
+    nbit=${20}
     bandstep=`echo $bw+$bw | bc`
 
     for i in ${ifs};do
         process_vdif ${source} ${workdir}/${experiment}_${st}_no0${scanname}_IF${i}.vdif  \
                      -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
-                     --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} --fil_out_dir ${fifodir} & sleep 0.2
+                     --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} \
+		     --fil_out_dir ${fifodir} --nbit=${nbit} & sleep 0.2
         pwait $njobs
         freqEdge=`echo $freqEdge+$bandstep | bc`
     done
@@ -121,13 +123,13 @@ get_frame_size(){
 }
 
 get_header_size(){
-    legacy=`vdif_print_headers ${1} -n1 | tail -1 | cut -d ',' -f6`
-    if [[ ${legacy} -eq 'legacy = 0' ]]; then
+    l=`vdif_print_headers ${1} -n1 | tail -1 | cut -d ',' -f6`
+    if [[ ${l} -eq 'legacy = 0' ]]; then
 	echo 32
-    elif [[ ${legacy} -eq 'legacy = 1' ]]; then
+    elif [[ ${l} -eq 'legacy = 1' ]]; then
 	echo 16
     else
-	msg "Unknown legacy parameter: ${legacy}. Aborting."
+	msg "Unknown legacy parameter: ${l}. Aborting."
 	exit 1
     fi
 }
@@ -177,6 +179,7 @@ digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sens
 flipIF=0
 njobs_parallel=20
 submit2fetch=0  # if equal to zero will not submit the filterbanks to fetch
+nbit=8          # bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floating point 32 bit
 
 # load other vars from config file, params above will be overwritten if they are in the config file
 source ${1}
@@ -310,16 +313,20 @@ for scan in "${scans[@]}";do
 
     frame_size_split=`get_frame_size ${vdifnme}`
     headersize_split=`get_header_size ${vdifnme}`
+
     bytes_per_frame_split=`echo ${frame_size_split}-${headersize_split} | bc`
     
     frames_per_second=`echo ${datarate}*1000000/8/${bytes_per_frame_split} | bc | cut -d '.' -f1`
     frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
     nsec=`echo "${file_size}/${frame_size_split}/${frames_per_second_per_band}" | bc`
+
     run_process_vdif $scanname "$ifs_odd" "$target" $experiment $st $freqLSB_0 $bw l $nchan $nsec $start \
-                      $station $njobs_splice $skip $workdir_odd $pol $digifil_nthreads $tscrunch ${fifodir}
+                     $station $njobs_splice $skip $workdir_odd $pol $digifil_nthreads $tscrunch ${fifodir} \
+		     $nbit
     # even IFs (i.e. USB)
     run_process_vdif $scanname "$ifs_even" "$target" $experiment $st $freqUSB_0 $bw u $nchan $nsec $start \
-                      $station $njobs_splice $skip $workdir_even $pol $digifil_nthreads $tscrunch ${fifodir}
+                     $station $njobs_splice $skip $workdir_even $pol $digifil_nthreads $tscrunch ${fifodir} \
+		     $nbit
 
     filfile=${experiment}_${st}_no0${scanname}_IFall_vdif_pol${pol}.fil
     # increase the fifo buffer size to speed things up, but wait till splice is running first

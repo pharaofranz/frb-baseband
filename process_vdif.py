@@ -61,9 +61,11 @@ def options():
                          'is thought to be a polaristaion. If set to 2 will process both '+
                          'creating stokes I. If set to 3 get (PP+QQ)^2, if 4 get full '+
                          'polarisation, i.e. PP,QQ,PQ,QP. '
-                         'Default=%(default)s.', )
-    digifil.add_argument('--twobit', action='store_true',
-                         help='If set will spit out 2bit filterbank instead of 8bit.')
+                         'Default=%(default)s.' )
+    digifil.add_argument('--nbit', default=8, type=int, choices=[2, 8, 16, -32],
+                         help='Sets the number of bits of the output filterbanks. ' +
+                         'Choices are [2, 8, 16, -32], where -32 is 32bit floating point. '+
+                         'Default=%(default)s.')
     digifil.add_argument('--tscrunch', type=int, default=1,
                          help='Donwsampling factor, digifils -t parameter. '+
                          'Default=%(default)s.')
@@ -132,7 +134,7 @@ def make_hdr(psr, freq, filename, pol=2, usb=True, ra=None, dec=None,
     return hdrfile
 
 
-def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=False, pol=2, twobit=False, tscrunch=1, nthreads=1, dm=0.0, coherent=False):
+def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=False, pol=2, nbit=8, tscrunch=1, nthreads=1, dm=0.0, coherent=False):
     filterbankfile = hdr.replace('.hdr', '.fil')
     if fil_out_dir is not None:
         filterbankfile = '{0}/{1}'.format(fil_out_dir, os.path.basename(filterbankfile))
@@ -143,7 +145,9 @@ def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=
         else:
             raise InputError('Filterbankfile {0} exists already. '.format(filterbankfile) +
                              'Delete first or set --force to overwrite')
-    nbit = 2 if twobit else 8
+    valid_nbit = [2, 8, 16, -32]
+    if not nbit in valid_nbit:
+        raise InputError(f'nbit={nbit} not in supported values of {valid_nbit}. ')
     if tscrunch > 1:
         cmd = 'digifil -cont -c -b{4} -S{0} -T{1} -2 -D 0.0 -t {6} -o {2} {3} -threads {5}'.format(
             start, nsecs, filterbankfile, hdr, nbit, nthreads, tscrunch)
@@ -261,7 +265,7 @@ if __name__ == "__main__":
         quit(0)
     filterbankfile = run_digifil(hdr, args.fil_out_dir, args.start, args.nsec, args.nchan,
                                  overwrite=args.force, pol=args.pol,
-                                 twobit=args.twobit, tscrunch=args.tscrunch,
+                                 nbit=args.nbit, tscrunch=args.tscrunch,
                                  nthreads=args.nthreads)
     if args.do_prepdata:
         if args.dm is not None:
