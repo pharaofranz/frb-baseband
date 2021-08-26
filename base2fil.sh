@@ -135,8 +135,8 @@ get_header_size(){
 }
 
 get_station_code(){
-    stations='onsala85 onsala60 srt wsrt effelsberg torun irbene irbene16 medicina noto'
-    sts=(o8 o6 sr wb ef tr ir ib mc nt)
+    stations='onsala85 onsala60 srt wsrt effelsberg torun irbene irbene16 medicina noto urumqi'
+    sts=(o8 o6 sr wb ef tr ir ib mc nt ur)
     station=$1
     station=${station,,} # set all to lower case
     c=0
@@ -180,6 +180,7 @@ flipIF=0
 njobs_parallel=20
 submit2fetch=0  # if equal to zero will not submit the filterbanks to fetch
 nbit=8          # bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floating point 32 bit
+isMark5b=0      # by default we assume the raw data are VDIF data, if this set will assume Mark5B recordings
 
 # load other vars from config file, params above will be overwritten if they are in the config file
 source ${1}
@@ -246,14 +247,19 @@ if [ ${n_baseband_files} -eq 1 ];then
 fi
 msg "There are ${n_baseband_files} baseband files in ${vbsdir}"
 
-test_file=`ls ${vbsdir} | head -1`
-msg "getting bytes_per_frame from ${test_file}"
 
-frame_size=`get_frame_size ${vbsdir}/${test_file}`
-headersize=`get_header_size ${vbsdir}/${test_file}`
+if [ ${isMark5b} -eq 0 ];then
+    test_file=`ls ${vbsdir}/*_${st}_* | head -1`
+    msg "getting bytes_per_frame from ${test_file}"
+    frame_size=`get_frame_size ${vbsdir}/${test_file}`
+    headersize=`get_header_size ${vbsdir}/${test_file}`
+    bytes_per_frame=`echo ${frame_size}-${headersize} | bc` 
+    mode="VDIF_${bytes_per_frame}-${datarate}-${nbbc}-2"
+else
+    msg "Assuming mark5b data with a payload of 10000 bytes per frame and a 16 byte header."
+    mode="MARK5B-${datarate}-${nbbc}-2"
+fi
 
-bytes_per_frame=`echo ${frame_size}-${headersize} | bc` 
-mode="VDIF_${bytes_per_frame}-${datarate}-${nbbc}-2"
 msg "will use ${mode}"
 
 scancounter=-1
@@ -272,8 +278,10 @@ for scan in "${scans[@]}";do
         vdifnme=${workdir_odd}/${experiment}_${st}_no0${scanname}_IF${i}.vdif
         vdif_files=${vdif_files}${vdifnme}" "
         if [ ! -f ${vdifnme} ];then
-            msg "Splitting the VDIF."
-            spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+            msg "Splitting the raw data."
+            #spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+	    #	${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
+            /home/franz/git/frb-baseband/spif2file.sh ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
 		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1
@@ -289,8 +297,10 @@ for scan in "${scans[@]}";do
         vdifnme=${workdir_even}/${experiment}_${st}_no0${scanname}_IF${n}.vdif
         vdif_files=${vdif_files}${vdifnme}" "
         if [ ! -f ${vdifnme} ];then
-            msg "Splitting the VDIF on Bogar for even IFs."
-            spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+            msg "Splitting the raw data for even IFs."
+            #spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+	#	      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
+            /home/franz/git/frb-baseband/spif2file.sh ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
 		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1

@@ -17,9 +17,9 @@ def options():
                          help='REQUIRED. Source for which data are to be analysed.')
     general.add_argument('-t', '--telescope', type=str, required=True,
                          choices=['o8', 'o6', 'sr', 'wb', 'ef', 'tr', \
-                                  'ir', 'ib', 'mc', 'nt', 'onsala85', 'onsala60', 'srt',\
+                                  'ir', 'ib', 'mc', 'nt', 'ur', 'onsala85', 'onsala60', 'srt',\
                                   'wsrt', 'effelsberg', 'torun', 'irbene', 'irbene16',\
-                                  'medicina', 'noto'],
+                                  'medicina', 'noto', 'urumqi'],
                          help='REQUIRED. Station name or 2-letter code of dish to be searched.')
     general.add_argument('-S', '--scans', nargs='+', default=None, type=int,
                          help='Optional list of scans to be searched. By default will ' \
@@ -76,7 +76,7 @@ def vex2dic(vexfile):
 
 def getFreq(vexdic, station, mode):
     '''
-    Returns the reference frequency, bandwidth, and number of IFs for station in mode.
+    Returns the reference frequency, bandwidth, number of IFs and recording format for station in mode.
     '''
     lines = vexdic['MODE']
     station = fixStationName(station).capitalize()
@@ -94,12 +94,16 @@ def getFreq(vexdic, station, mode):
                     bw = float(bw)
                 if ('$IF' in line) and (station in line):
                     LO = float(line.split('@')[1].split('MHz')[0].strip())
+                if ('$TRACKS' in line) and (station in line):
+                    recFmt = line.split('=')[1].strip().split('.')[0].lower()
+                    if not recFmt in ['vdif', 'mark5b']:
+                        raise RunError(f'Unknown recording format: {recFmt}.')
             break
     try:
         flipIF = True if LO > f_ref else False
-        return f_ref, bw, n_if, flipIF
+        return f_ref, bw, n_if, flipIF, recFmt
     except:
-        raise RunError(f'Could not determine Frequency setup for {station} in {mode}.')
+        raise RunError(f'Could not determine frequency/recording setup for {station} in {mode}.')
 
 def getExperimentName(vexdic):
     '''
@@ -266,7 +270,7 @@ class RunError(Error):
 
 def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
-                scans, skips, lengths, scanNames,
+                scans, skips, lengths, scanNames, recFmt,
                 template=None, search=False, njobs=20, flipIF=False):
     conf = []
     scans = list2BashArray(scans)
@@ -291,6 +295,8 @@ def writeConfig(outfile, experiment, source, station,
         conf.append(f'submit2fetch=1\n')
     if flipIF:
         conf.append(f'flipIF=1\n')
+    if recFmt == 'mark5b':
+        conf.append(f'isMark5b=1\n')
     conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
@@ -339,8 +345,8 @@ def fixStationName(station, short=True):
     '''
     station = station.lower()
     longnames = ['onsala85', 'onsala60', 'srt', 'wsrt', 'effelsberg', 'torun',
-                 'irbene', 'irbene16', 'medicina', 'noto']
-    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 'ir', 'ib', 'mc', 'nt']
+                 'irbene', 'irbene16', 'medicina', 'noto', 'urumqi']
+    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 'ir', 'ib', 'mc', 'nt', 'ur']
     if not (station in longnames) and not (station in shortnames):
         raise InputError(f'Station {station} not recognized. ' \
                          f'Must be any of {longnames} or {shortnames}')
@@ -395,10 +401,10 @@ def main(args):
             else:
                 outfile = outfile.replace(fmodes[i-1], fmode)
         try:
-            fref, bw, nIF, flipIF = getFreq(vex, station, fmode)
+            fref, bw, nIF, flipIF, recFmt = getFreq(vex, station, fmode)
         except:
             if debug:
-                fref, bw, nIF, flipIF = getFreq(vex, station, fmode)
+                fref, bw, nIF, flipIF, recFmt = getFreq(vex, station, fmode)
             print(f'No setup for station {station} in mode {fmode}.')
             continue
         try:
@@ -415,13 +421,13 @@ def main(args):
         try:
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                        scanNames, template, search, njobs, flipIF)
+                        scanNames, recFmt, template, search, njobs, flipIF)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                            scanNames, template, search, njobs, flipIF)
+                            scanNames, recFmt, template, search, njobs, flipIF)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return
