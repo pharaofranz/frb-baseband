@@ -60,6 +60,10 @@ elif [[ ${mode} == 'MARK5B-1024-16-2' ]];then
     frames_per_second=12800
     recipe="32>[16,17,24,25][0,1,8,9][18,19,26,27][2,3,10,11][20,21,28,29][4,5,12,13][22,23,30,31][6,7,14,15]:0-7"
     #
+elif [[ ${mode} == 'MARK5B-1024-8-2' ]];then
+    frames_per_second=12800
+    recipe="16>[8,9,12,13][0,1,4,5][10,11,14,15][2,3,6,7]:0-3"
+    #
 elif [[ ${mode} == 'MARK5B-2048-16-2' ]];then
     frames_per_second=25600
     recipe="32>[16,17,24,25][0,1,8,9][18,19,26,27][2,3,10,11][20,21,28,29][4,5,12,13][22,23,30,31][6,7,14,15]:0-7"
@@ -79,7 +83,7 @@ if [[ ${mode:0:4} == 'VDIF' ]]; then
     input_payload=8000
     
 elif [[ ${mode:0:6} == 'MARK5B' ]]; then
-    output_payload=5000
+    output_payload=10000
     input_headersize=16
     input_payload=10000
 else
