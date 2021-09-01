@@ -17,9 +17,9 @@ def options():
                          help='REQUIRED. Source for which data are to be analysed.')
     general.add_argument('-t', '--telescope', type=str, required=True,
                          choices=['o8', 'o6', 'sr', 'wb', 'ef', 'tr', \
-                                  'ir', 'ib', 'mc', 'nt', 'ur', 'onsala85', 'onsala60', 'srt',\
+                                  'ir', 'ib', 'mc', 'nt', 'ur', 'bd', 'sv', 'onsala85', 'onsala60', 'srt',\
                                   'wsrt', 'effelsberg', 'torun', 'irbene', 'irbene16',\
-                                  'medicina', 'noto', 'urumqi'],
+                                  'medicina', 'noto', 'urumqi', 'badary', 'svetloe'],
                          help='REQUIRED. Station name or 2-letter code of dish to be searched.')
     general.add_argument('-S', '--scans', nargs='+', default=None, type=int,
                          help='Optional list of scans to be searched. By default will ' \
@@ -345,8 +345,8 @@ def fixStationName(station, short=True):
     '''
     station = station.lower()
     longnames = ['onsala85', 'onsala60', 'srt', 'wsrt', 'effelsberg', 'torun',
-                 'irbene', 'irbene16', 'medicina', 'noto', 'urumqi']
-    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 'ir', 'ib', 'mc', 'nt', 'ur']
+                 'irbene', 'irbene16', 'medicina', 'noto', 'urumqi', 'badary', 'svetloe']
+    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 'ir', 'ib', 'mc', 'nt', 'ur', 'bd', 'sv']
     if not (station in longnames) and not (station in shortnames):
         raise InputError(f'Station {station} not recognized. ' \
                          f'Must be any of {longnames} or {shortnames}')
