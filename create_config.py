@@ -45,6 +45,9 @@ def options():
     general.add_argument('--search', action='store_true',
                          help='If set will set the flag to submit the created filterbanks '\
                          'to FETCH.')
+    general.add_argument('-k', '--keepVDIF', action='store_true',
+                         help='If set will set the flag to keep the split VDIF files after '\
+                         'filterbanks have been created. By default those are removed.')    
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
@@ -271,7 +274,8 @@ class RunError(Error):
 def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
                 scans, skips, lengths, scanNames, recFmt,
-                template=None, search=False, njobs=20, flipIF=False):
+                template=None, search=False, njobs=20, flipIF=False,
+                keepVDIF=False):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -297,6 +301,8 @@ def writeConfig(outfile, experiment, source, station,
         conf.append(f'flipIF=1\n')
     if recFmt == 'mark5b':
         conf.append(f'isMark5b=1\n')
+    if keepVDIF:
+        conf.append(f'keepVDIF=1\n')
     conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
@@ -306,11 +312,13 @@ def writeConfig(outfile, experiment, source, station,
         f.close()
         params = ['experiment', 'target', 'scans', 'skips',
                   'lengths', 'freqLSB_0', 'bw', 'nif', 'njobs_parallel',
-                  'nchan', 'tscrunch', 'station', 'scannames']
+                  'nchan', 'tscrunch', 'station', 'scannames', 'isMark5b']
         if search:
             params.append('submit2fetch')
         if flipIF:
             params.append('flipIF')
+        if keepVDIF:
+            params.append('keepVDIF')
         # we overwrite existing parameters
         delLines = [i for param in params for i,line in enumerate(templ) if param in line]
         templ = [line for i,line in enumerate(templ) if i not in delLines]
@@ -381,6 +389,7 @@ def main(args):
     template = args.template
     debug = args.debug
     search = args.search
+    keepVDIF = args.keepVDIF
     njobs = args.njobs
     try:
         ra, dec = getSourceCoords(vex, source)
@@ -421,13 +430,13 @@ def main(args):
         try:
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                        scanNames, recFmt, template, search, njobs, flipIF)
+                        scanNames, recFmt, template, search, njobs, flipIF, keepVDIF)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                            scanNames, recFmt, template, search, njobs, flipIF)
+                            scanNames, recFmt, template, search, njobs, flipIF, keepVDIF)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return

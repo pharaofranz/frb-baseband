@@ -181,6 +181,7 @@ njobs_parallel=20
 submit2fetch=0  # if equal to zero will not submit the filterbanks to fetch
 nbit=8          # bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floating point 32 bit
 isMark5b=0      # by default we assume the raw data are VDIF data, if this set will assume Mark5B recordings
+keepVDIF=0      # by default split VDIF files are deleted to save space on disk, if set will keep those data
 
 # load other vars from config file, params above will be overwritten if they are in the config file
 source ${1}
@@ -344,19 +345,33 @@ for scan in "${scans[@]}";do
         setfifo ${filfifo} 1048576; \
         sleep 0.2;done && msg "Changed fifo sizes successfuly." &
     if [[ $submit2fetch -ne 0 ]]; then
-	splice ${splice_list} > ${outdir}/${filfile} && \
-            rm -rf ${workdir_even}/${experiment}_${st}_no0${scanname}_IF*.vdif \
-               ${workdir_odd}/${experiment}_${st}_no0${scanname}_IF*.vdif && \
-            submit_fetch ${outdir}/${filfile} && \
-            msg "Submitted ${outdir}/${filfile} to fetch" && \
-            for filfifo in ${splice_list};do rm -rf $filfifo; done && \
-            msg "Fifos removed" &
+	if [[ $keepVDIF -eq 0 ]]; then
+	    splice ${splice_list} > ${outdir}/${filfile} && \
+		rm -rf ${workdir_even}/${experiment}_${st}_no0${scanname}_IF*.vdif \
+		   ${workdir_odd}/${experiment}_${st}_no0${scanname}_IF*.vdif && \
+		submit_fetch ${outdir}/${filfile} && \
+		msg "Submitted ${outdir}/${filfile} to fetch" && \
+		for filfifo in ${splice_list};do rm -rf $filfifo; done && \
+		msg "Fifos removed" &
+	else
+	    splice ${splice_list} > ${outdir}/${filfile} && \
+		submit_fetch ${outdir}/${filfile} && \
+		msg "Submitted ${outdir}/${filfile} to fetch" && \
+		for filfifo in ${splice_list};do rm -rf $filfifo; done && \
+		msg "Fifos removed" &
+	fi
     else
-	splice ${splice_list} > ${outdir}/${filfile} && \
-            rm -rf ${workdir_even}/${experiment}_${st}_no0${scanname}_IF*.vdif \
-               ${workdir_odd}/${experiment}_${st}_no0${scanname}_IF*.vdif && \
-            for filfifo in ${splice_list};do rm -rf $filfifo; done && \
-            msg "Fifos removed" &
+	if [[ $keepVDIF -eq 0 ]]; then
+	    splice ${splice_list} > ${outdir}/${filfile} && \
+		rm -rf ${workdir_even}/${experiment}_${st}_no0${scanname}_IF*.vdif \
+		   ${workdir_odd}/${experiment}_${st}_no0${scanname}_IF*.vdif && \
+		for filfifo in ${splice_list};do rm -rf $filfifo; done && \
+		msg "Fifos removed" &
+	else
+	    splice ${splice_list} > ${outdir}/${filfile} && \
+		for filfifo in ${splice_list};do rm -rf $filfifo; done && \
+		msg "Fifos removed" &
+	fi
     fi
     sleep 5
     pwait $njobs_splice
