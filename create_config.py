@@ -21,9 +21,10 @@ def options():
                                   'wsrt', 'effelsberg', 'torun', 'irbene', 'irbene16',\
                                   'medicina', 'noto', 'urumqi', 'badary', 'svetloe'],
                          help='REQUIRED. Station name or 2-letter code of dish to be searched.')
-    general.add_argument('-S', '--scans', nargs='+', default=None, type=int,
+    general.add_argument('-S', '--scans', nargs='+', default=None, type=str,
                          help='Optional list of scans to be searched. By default will ' \
-                         'return all scans. Scan numbers with or without leading zeros.')
+                         'return all scans. Scan numbers with or without leading zeros. Can be'\
+                         'ranges specified as 0-10 23-40.')
     general.add_argument('-n', '--nchan', type=int, default=128,
                          help='Number of channels per subband (i.e. per IF). Default=%(default)s')
     general.add_argument('-d', '--downsamp', type=int, default=1,
@@ -218,6 +219,20 @@ def getScanList(df, source, station, mode, scans=None):
              (df.fmode == mode) &
              (df.station == station)]
     if scans:
+        # convert single entries to ints, check if ranges specified as 'a-b' are present and
+        # change those into ints, remove any duplicates
+        tmp = []
+        for s in scans:
+            try:
+                tmp.append(int(s))
+            except(ValueError):
+                try:
+                    b, e = [int(n) for n in s.split('-')]
+                    for n in range(b, e+1):
+                        tmp.append(n)
+                except:
+                    print(f'Something is wrong with scan {s}, ignoring it.')
+        scans = list(set(tmp))
         ddf = ddf[(ddf.scanNo.isin(scans))]
     if ddf.empty:
         raise InputError(f'No data found for station: {station}, mode: {mode}, source: {source}, scans: {scans}.')
