@@ -49,6 +49,9 @@ def options():
     general.add_argument('-k', '--keepVDIF', action='store_true',
                          help='If set will set the flag to keep the split VDIF files after '\
                          'filterbanks have been created. By default those are removed.')    
+    general.add_argument('-F', '--flag', type=str, default=None,
+                         help='Path to a flag file to be used by Heimdall and Fetch in the'\
+                         'searches. Defaults are set in greenburst.')    
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
@@ -225,7 +228,7 @@ def getScanList(df, source, station, mode, scans=None):
         for s in scans:
             try:
                 tmp.append(int(s))
-            except(ValueError):
+            except(ValueError) as e:
                 try:
                     b, e = [int(n) for n in s.split('-')]
                     for n in range(b, e+1):
@@ -290,7 +293,7 @@ def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
                 scans, skips, lengths, scanNames, recFmt,
                 template=None, search=False, njobs=20, flipIF=False,
-                keepVDIF=False):
+                keepVDIF=False, flagfile=None):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -318,6 +321,8 @@ def writeConfig(outfile, experiment, source, station,
         conf.append(f'isMark5b=1\n')
     if keepVDIF:
         conf.append(f'keepVDIF=1\n')
+    if not flagfile == None:
+        conf.append(f'flagFile={flagfile}\n')
     conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
@@ -334,6 +339,8 @@ def writeConfig(outfile, experiment, source, station,
             params.append('flipIF')
         if keepVDIF:
             params.append('keepVDIF')
+        if not flagfile == None:
+            params.append('flagFile')
         # we overwrite existing parameters
         delLines = [i for param in params for i,line in enumerate(templ) if param in line]
         templ = [line for i,line in enumerate(templ) if i not in delLines]
@@ -406,6 +413,12 @@ def main(args):
     search = args.search
     keepVDIF = args.keepVDIF
     njobs = args.njobs
+    flagfile = args.flag
+    if not flagfile == None:
+        flagfile = os.path.abspath(args.flag)
+        if not os.path.exists(flagfile):
+            print(f'Flag file {flagfile} does not exist. Ignoring it.')
+            flagfile = None
     try:
         ra, dec = getSourceCoords(vex, source)
     except:
@@ -445,13 +458,15 @@ def main(args):
         try:
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                        scanNames, recFmt, template, search, njobs, flipIF, keepVDIF)
+                        scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
+                        flagfile)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
-                            scanNames, recFmt, template, search, njobs, flipIF, keepVDIF)
+                            scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
+                            flagfile)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return
