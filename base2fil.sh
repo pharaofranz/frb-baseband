@@ -111,7 +111,9 @@ compare_size() {
     msg "Seems fine, final size is $size"
 }
 submit_fetch() {
-     /home/franz/.conda/envs/fetch/bin/python /home/franz/software/src/greenburst/pika_send.py -q "stage01_queue" -m ${1}
+    # argument $1 points at the filterbank file
+    # argument $2 points at the flag file -- can be empty.
+     /home/franz/.conda/envs/fetch/bin/python /home/franz/software/src/greenburst/pika_send.py -q "stage01_queue" -m "${1} ${2}"
 }
 msg() {
     echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` ${1}"
@@ -182,6 +184,7 @@ submit2fetch=0  # if equal to zero will not submit the filterbanks to fetch
 nbit=8          # bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floating point 32 bit
 isMark5b=0      # by default we assume the raw data are VDIF data, if this set will assume Mark5B recordings
 keepVDIF=0      # by default split VDIF files are deleted to save space on disk, if set will keep those data
+flagFile=''     # optionally, a flag file can be passed
 
 # load other vars from config file, params above will be overwritten if they are in the config file
 source ${1}
@@ -349,14 +352,14 @@ for scan in "${scans[@]}";do
 	    splice ${splice_list} > ${outdir}/${filfile} && \
 		rm -rf ${workdir_even}/${experiment}_${st}_no0${scanname}_IF*.vdif \
 		   ${workdir_odd}/${experiment}_${st}_no0${scanname}_IF*.vdif && \
-		submit_fetch ${outdir}/${filfile} && \
-		msg "Submitted ${outdir}/${filfile} to fetch" && \
+		submit_fetch ${outdir}/${filfile} ${flagFile} && \
+		msg "Submitted ${outdir}/${filfile} ${flagFile} to fetch" && \
 		for filfifo in ${splice_list};do rm -rf $filfifo; done && \
 		msg "Fifos removed" &
 	else
 	    splice ${splice_list} > ${outdir}/${filfile} && \
-		submit_fetch ${outdir}/${filfile} && \
-		msg "Submitted ${outdir}/${filfile} to fetch" && \
+		submit_fetch ${outdir}/${filfile} ${flagFile} && \
+		msg "Submitted ${outdir}/${filfile} ${flagFile} to fetch" && \
 		for filfifo in ${splice_list};do rm -rf $filfifo; done && \
 		msg "Fifos removed" &
 	fi
