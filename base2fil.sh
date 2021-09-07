@@ -255,8 +255,8 @@ msg "There are ${n_baseband_files} baseband files in ${vbsdir}"
 if [ ${isMark5b} -eq 0 ];then
     test_file=`ls ${vbsdir}/*_${st}_* | head -1`
     msg "getting bytes_per_frame from ${test_file}"
-    frame_size=`get_frame_size ${vbsdir}/${test_file}`
-    headersize=`get_header_size ${vbsdir}/${test_file}`
+    frame_size=`get_frame_size ${test_file}`
+    headersize=`get_header_size ${test_file}`
     bytes_per_frame=`echo ${frame_size}-${headersize} | bc` 
     mode="VDIF_${bytes_per_frame}-${datarate}-${nbbc}-2"
 else
