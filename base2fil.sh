@@ -320,11 +320,19 @@ for scan in "${scans[@]}";do
     let njobs_splice=${njobs_parallel} #${nif}+1 # 1 extra for splice, another for digfil
 
     compare_size "${vdif_files}"
+
+
     if [[ $? -eq 1 ]];then
         exit 1
     fi
     file_size=`ls -l ${vdifnme} | cut -d ' ' -f 5`
 
+    filfile=${experiment}_${st}_no0${scanname}_IFall_vdif_pol${pol}.fil
+
+    if [[ ${file_size} -eq 0 ]]; then
+	touch ${outdir}/${filfile}
+	continue
+    fi
     frame_size_split=`get_frame_size ${vdifnme}`
     headersize_split=`get_header_size ${vdifnme}`
 
@@ -342,7 +350,6 @@ for scan in "${scans[@]}";do
                      $station $njobs_splice $skip $workdir_even $pol $digifil_nthreads $tscrunch ${fifodir} \
 		     $nbit
 
-    filfile=${experiment}_${st}_no0${scanname}_IFall_vdif_pol${pol}.fil
     # increase the fifo buffer size to speed things up, but wait till splice is running first
     sleep 2 && for filfifo in ${splice_list}; do \
         setfifo ${filfifo} 1048576; \
