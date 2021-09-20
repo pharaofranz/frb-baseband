@@ -103,7 +103,7 @@ def getFreq(vexdic, station, mode):
                     LO = float(line.split('@')[1].split('MHz')[0].strip())
                 if ('$TRACKS' in line) and (station in line):
                     recFmt = line.split('=')[1].strip().split('.')[0].lower()
-                    if not recFmt in ['vdif', 'mark5b']:
+                    if not recFmt in ['vdif', 'mark5b', 'vdif5032']:
                         raise RunError(f'Unknown recording format: {recFmt}.')
             break
     try:
