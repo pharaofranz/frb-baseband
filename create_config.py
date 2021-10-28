@@ -51,7 +51,11 @@ def options():
                          'filterbanks have been created. By default those are removed.')    
     general.add_argument('-F', '--flag', type=str, default=None,
                          help='Path to a flag file to be used by Heimdall and Fetch in the'\
-                         'searches. Defaults are set in greenburst.')    
+                         'searches. Defaults are set in greenburst.')
+    general.add_argument('--nbit', default=None, type=int, choices=[2, 8, 16, -32],
+                         help='Sets the number of bits of the output filterbanks. ' +
+                         'Choices are [2, 8, 16, -32], where -32 is 32bit floating point. '+
+                         'Default=%(default)s.')
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
@@ -293,7 +297,7 @@ def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
                 scans, skips, lengths, scanNames, recFmt,
                 template=None, search=False, njobs=20, flipIF=False,
-                keepVDIF=False, flagfile=None):
+                keepVDIF=False, flagfile=None, nbit=None):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -323,6 +327,8 @@ def writeConfig(outfile, experiment, source, station,
         conf.append(f'keepVDIF=1\n')
     if not flagfile == None:
         conf.append(f'flagFile={flagfile}\n')
+    if not nbit == None:
+        conf.append(f'nbit={nbit}\n')
     conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
@@ -341,6 +347,8 @@ def writeConfig(outfile, experiment, source, station,
             params.append('keepVDIF')
         if not flagfile == None:
             params.append('flagFile')
+        if not nbit == None:
+            params.append('nbit')
         # we overwrite existing parameters
         delLines = [i for param in params for i,line in enumerate(templ) if param in line]
         templ = [line for i,line in enumerate(templ) if i not in delLines]
@@ -414,6 +422,7 @@ def main(args):
     keepVDIF = args.keepVDIF
     njobs = args.njobs
     flagfile = args.flag
+    nbit = args.nbit
     if not flagfile == None:
         flagfile = os.path.abspath(args.flag)
         if not os.path.exists(flagfile):
@@ -459,14 +468,14 @@ def main(args):
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                         scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                        flagfile)
+                        flagfile, nbit)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                             scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                            flagfile)
+                            flagfile, nbit)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return
