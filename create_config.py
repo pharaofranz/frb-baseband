@@ -55,7 +55,7 @@ def options():
     general.add_argument('--nbit', default=None, type=int, choices=[2, 8, 16, -32],
                          help='Sets the number of bits of the output filterbanks. ' +
                          'Choices are [2, 8, 16, -32], where -32 is 32bit floating point. '+
-                         'Default=%(default)s.')
+                         'Default=8.')
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
