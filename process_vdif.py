@@ -66,6 +66,9 @@ def options():
                          help='Sets the number of bits of the output filterbanks. ' +
                          'Choices are [2, 8, 16, -32], where -32 is 32bit floating point. '+
                          'Default=%(default)s.')
+    digifil.add_argument('--keepBP', action='store_true',
+                         help='If set digifil will not scale the data, i.e. the bandpass '+
+                         'will be visible. Effectively adds -I0 to the digfil command.')
     digifil.add_argument('--tscrunch', type=int, default=1,
                          help='Donwsampling factor, digifils -t parameter. '+
                          'Default=%(default)s.')
@@ -134,7 +137,7 @@ def make_hdr(psr, freq, filename, pol=2, usb=True, ra=None, dec=None,
     return hdrfile
 
 
-def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=False, pol=2, nbit=8, tscrunch=1, nthreads=1, dm=0.0, coherent=False):
+def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=False, pol=2, nbit=8, tscrunch=1, nthreads=1, dm=0.0, coherent=False, keepBP=False):
     filterbankfile = hdr.replace('.hdr', '.fil')
     if fil_out_dir is not None:
         filterbankfile = '{0}/{1}'.format(fil_out_dir, os.path.basename(filterbankfile))
@@ -173,6 +176,8 @@ def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=
         cmd = '{0} -D {1}'.format(cmd, dm)
         if coherent:
             cmd = '{0} -F{1}:D'.format(cmd, nchan)
+    if keepBP:
+        cmd = '{0} -I0'.format(cmd)
     print('running {0}'.format(cmd))
     try:
         id = id_generator()
@@ -266,7 +271,7 @@ if __name__ == "__main__":
     filterbankfile = run_digifil(hdr, args.fil_out_dir, args.start, args.nsec, args.nchan,
                                  overwrite=args.force, pol=args.pol,
                                  nbit=args.nbit, tscrunch=args.tscrunch,
-                                 nthreads=args.nthreads)
+                                 nthreads=args.nthreads, keepBP=args.keepBP)
     if args.do_prepdata:
         if args.dm is not None:
             dm1 = args.dm

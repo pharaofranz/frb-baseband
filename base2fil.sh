@@ -49,13 +49,17 @@ run_process_vdif() {
     tscrunch=${18}
     fifodir=${19}
     nbit=${20}
+    keepBP=${21}
     bandstep=`echo $bw+$bw | bc`
 
+    keepBP_flag=''
+    if [[ $keepBP -gt 0 ]]; then
+	keepBP_flag='--keepBP'
     for i in ${ifs};do
         process_vdif ${source} ${workdir}/${experiment}_${st}_no0${scanname}_IF${i}.vdif  \
                      -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
                      --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} \
-		     --fil_out_dir ${fifodir} --nbit=${nbit} & sleep 0.2
+		     --fil_out_dir ${fifodir} --nbit=${nbit} ${keepBP_flag} & sleep 0.2
         pwait $njobs
         freqEdge=`echo $freqEdge+$bandstep | bc`
     done
@@ -185,6 +189,7 @@ nbit=8          # bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floatin
 isMark5b=0      # by default we assume the raw data are VDIF data, if this set will assume Mark5B recordings
 keepVDIF=0      # by default split VDIF files are deleted to save space on disk, if set will keep those data
 flagFile=''     # optionally, a flag file can be passed
+keepBP=0        # if set the bandpass is not removed, i.e. -I0 is added to the digifil command
 
 # load other vars from config file, params above will be overwritten if they are in the config file
 source ${1}
@@ -344,11 +349,11 @@ for scan in "${scans[@]}";do
 
     run_process_vdif $scanname "$ifs_odd" "$target" $experiment $st $freqLSB_0 $bw l $nchan $nsec $start \
                      $station $njobs_splice $skip $workdir_odd $pol $digifil_nthreads $tscrunch ${fifodir} \
-		     $nbit
+		     $nbit $keepBP
     # even IFs (i.e. USB)
     run_process_vdif $scanname "$ifs_even" "$target" $experiment $st $freqUSB_0 $bw u $nchan $nsec $start \
                      $station $njobs_splice $skip $workdir_even $pol $digifil_nthreads $tscrunch ${fifodir} \
-		     $nbit
+		     $nbit $keepBP
 
     # increase the fifo buffer size to speed things up, but wait till splice is running first
     sleep 2 && for filfifo in ${splice_list}; do \

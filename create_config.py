@@ -56,6 +56,9 @@ def options():
                          help='Sets the number of bits of the output filterbanks. ' +
                          'Choices are [2, 8, 16, -32], where -32 is 32bit floating point. '+
                          'Default=8.')
+    general.add_argument('--keepBP', action='store_true',
+                         help='If set digifil will not scale the data, i.e. the bandpass '+
+                         'will be visible. Effectively adds -I0 to the digfil command.')
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
@@ -297,7 +300,7 @@ def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
                 scans, skips, lengths, scanNames, recFmt,
                 template=None, search=False, njobs=20, flipIF=False,
-                keepVDIF=False, flagfile=None, nbit=None):
+                keepVDIF=False, flagfile=None, nbit=None, keepBP=False):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -325,6 +328,8 @@ def writeConfig(outfile, experiment, source, station,
         conf.append(f'isMark5b=1\n')
     if keepVDIF:
         conf.append(f'keepVDIF=1\n')
+    if keepBP:
+        conf.append(f'keepBP=1\n')
     if not flagfile == None:
         conf.append(f'flagFile={flagfile}\n')
     if not nbit == None:
@@ -345,6 +350,8 @@ def writeConfig(outfile, experiment, source, station,
             params.append('flipIF')
         if keepVDIF:
             params.append('keepVDIF')
+        if keepBP:
+            params.append('keepBP')
         if not flagfile == None:
             params.append('flagFile')
         if not nbit == None:
@@ -422,7 +429,6 @@ def main(args):
     keepVDIF = args.keepVDIF
     njobs = args.njobs
     flagfile = args.flag
-    nbit = args.nbit
     if not flagfile == None:
         flagfile = os.path.abspath(args.flag)
         if not os.path.exists(flagfile):
@@ -468,14 +474,14 @@ def main(args):
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                         scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                        flagfile, nbit)
+                        flagfile, args.nbit, args.keepBP)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                             scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                            flagfile, nbit)
+                            flagfile, args.nbit, args.keepBP)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return
