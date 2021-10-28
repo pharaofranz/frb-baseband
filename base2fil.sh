@@ -181,6 +181,8 @@ start=0 #
 
 pol=2           # if set to 2 will create stokes I 
                 # if set to either 0 or 1 will process only one polarisation
+                # if set to 4 will create full pol data,
+                # if set to 3 will create (PP+QQ)^2
 digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sensitivity...
 flipIF=0
 njobs_parallel=20

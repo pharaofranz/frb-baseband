@@ -59,6 +59,13 @@ def options():
     general.add_argument('--keepBP', action='store_true',
                          help='If set digifil will not scale the data, i.e. the bandpass '+
                          'will be visible. Effectively adds -I0 to the digfil command.')
+    general.add_argument('--pol', type=int, default=None, choices=[0, 1, 2, 3, 4],
+                         help='Determines which "channel" of the vdif file to process. '+
+                         'Currently dspsr understands only 2-channel VDIF, where each chan '+
+                         'is thought to be a polarisation (0 and 1). If set to 2 will process both '+
+                         'creating stokes I. If set to 3 get (PP+QQ)^2, if 4 get full '+
+                         'polarisation, i.e. PP,QQ,PQ,QP. '
+                         'Default=2' )    
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
@@ -300,7 +307,8 @@ def writeConfig(outfile, experiment, source, station,
                 ra, dec, fref, bw, nIF, nchan, downsamp,
                 scans, skips, lengths, scanNames, recFmt,
                 template=None, search=False, njobs=20, flipIF=False,
-                keepVDIF=False, flagfile=None, nbit=None, keepBP=False):
+                keepVDIF=False, flagfile=None, nbit=None, keepBP=False,
+                pol=None):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -334,6 +342,8 @@ def writeConfig(outfile, experiment, source, station,
         conf.append(f'flagFile={flagfile}\n')
     if not nbit == None:
         conf.append(f'nbit={nbit}\n')
+    if not pol == None:
+        conf.append(f'pol={pol}\n')
     conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
@@ -356,6 +366,8 @@ def writeConfig(outfile, experiment, source, station,
             params.append('flagFile')
         if not nbit == None:
             params.append('nbit')
+        if not pol == None:
+            params.append('pol')
         # we overwrite existing parameters
         delLines = [i for param in params for i,line in enumerate(templ) if param in line]
         templ = [line for i,line in enumerate(templ) if i not in delLines]
@@ -474,14 +486,14 @@ def main(args):
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                         scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                        flagfile, args.nbit, args.keepBP)
+                        flagfile, args.nbit, args.keepBP, args.pol)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                             scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                            flagfile, args.nbit, args.keepBP)
+                            flagfile, args.nbit, args.keepBP, args.pol)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return

@@ -58,7 +58,7 @@ def options():
     digifil.add_argument('--pol', type=int, default=2, choices=[0, 1, 2, 3, 4],
                          help='Determines which "channel" of the vdif file to process. '+
                          'Currently dspsr understands only 2-channel VDIF, where each chan '+
-                         'is thought to be a polaristaion. If set to 2 will process both '+
+                         'is thought to be a polarisation (0 and 1). If set to 2 will process both '+
                          'creating stokes I. If set to 3 get (PP+QQ)^2, if 4 get full '+
                          'polarisation, i.e. PP,QQ,PQ,QP. '
                          'Default=%(default)s.' )
