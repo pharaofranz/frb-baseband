@@ -55,6 +55,7 @@ run_process_vdif() {
     keepBP_flag=''
     if [[ $keepBP -gt 0 ]]; then
 	keepBP_flag='--keepBP'
+    fi
     for i in ${ifs};do
         process_vdif ${source} ${workdir}/${experiment}_${st}_no0${scanname}_IF${i}.vdif  \
                      -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
