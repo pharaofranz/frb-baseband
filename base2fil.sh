@@ -416,16 +416,22 @@ if [ $? -eq 0 ];then
 	scan=`printf "%03g" ${scan}`
 	scanname=`printf "%03g" ${scanname}`
         filfile=${experiment}_${st}_no0${scanname}_IFall_vdif_pol${pol}.fil
-        dspsr -E ${target}.psrcat.par -L 10 -A -k ${station} -d1 ${outdir}/${filfile} -O ${outdir}/${filfile} -t 8
-        psrplot -pF -D /CPS -c x:unit=s ${outdir}/${filfile}.ar -j dedisperse,tscrunch,pscrunch,"fscrunch 128"
+        cmd="dspsr -E ${target}.psrcat.par -L 10 -A -k ${station} -d1 ${outdir}/${filfile} -O ${outdir}/${filfile} -t 8"
+	echo "running ${cmd}"
+	${cmd}
+	cmd="psrplot -pF -D /CPS -c x:unit=s ${outdir}/${filfile}.ar -j dedisperse,tscrunch,pscrunch,\"fscrunch 128\""
+	echo "running ${cmd}"
+	eval "${cmd}"
         mv pgplot.ps ${outdir}/${filfile}.ps
-	if [[${pol} -eq 4 ]];then
+	if [[ ${pol} -eq 4 ]];then
 	    # in case we have full pol data, we create a plot with pol 0, pol 1, Stokes I, and Full Stokes
-	    psrplot -N 2x2 -D /CPS ${outdir}/${filfile}.ar -j tscrunch,dedisperse,"fscrunch 128" \
-		    -p freq+ -c ':0:pol=0' \
-		    -p freq+ -c ':1:pol=1' \
-		    -p freq+ -c ':2:x:unit=ms' -j :2:pscrunch \
-		    -p Scyl -j :3:fscrunch
+	    cmd="psrplot -N 2x2 -D /CPS ${outdir}/${filfile}.ar -j tscrunch,dedisperse,\"fscrunch 128\" \\
+		    -p freq+ -c ':0:pol=0' \\
+		    -p freq+ -c ':1:pol=1' \\
+		    -p freq+ -c ':2:x:unit=ms' -j :2:pscrunch \\
+		    -p Scyl -j :3:fscrunch"
+	    echo "running ${cmd}"
+	    eval "${cmd}"
 	    mv pgplot.ps ${outdir}/${filfile}_fullPol.ps
 	fi
     done
