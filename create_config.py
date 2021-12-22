@@ -65,7 +65,12 @@ def options():
                          'is thought to be a polarisation (0 and 1). If set to 2 will process both '+
                          'creating stokes I. If set to 3 get (PP+QQ)^2, if 4 get full '+
                          'polarisation, i.e. PP,QQ,PQ,QP. '
-                         'Default=2' )    
+                         'Default=2' )
+    general.add_argument('--gap', type=int, default=10,
+                         help='Sets the minimum gap time (in s) between scans for a new recording to start.'+
+                         'If the gap is smaller than this, subsequent scans will be assumed to be in the same '+
+                         'recording. For regular disk-based recordings this is 10s; for eVLBI this is 40s. '+
+                         'Default=10')
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
@@ -225,7 +230,7 @@ def sched2df(vexdic):
         first_scan = False
     return scans
 
-def getScanList(df, source, station, mode, scans=None):
+def getScanList(df, source, station, mode, scans=None, min_scan_gap=10):
     '''
     For source, station and mode in vexfile, 
     returns three lists: scanNo's, number of seconds to skip 
@@ -262,7 +267,7 @@ def getScanList(df, source, station, mode, scans=None):
         scan = scanNo
         skip_sec = 0
         while df[(df.scanNo == scan) &
-                 (df.station == station)].gap2previous_sec.item() < 10:
+                 (df.station == station)].gap2previous_sec.item() < min_scan_gap:
             # if we look at the first scan the above will always be true, leads to errors.
             scan -= 1
             if df[(df.scanNo == scan) & (df.station == station)].empty:
@@ -474,12 +479,14 @@ def main(args):
         try:
             scans, skips, lengths, scanNames = getScanList(df, source,
                                                            station, fmode,
-                                                           scans=args.scans)
+                                                           scans=args.scans,
+                                                           min_scan_gap=args.gap)
         except:
             if debug:
                 scans, skips, lengths, scanNames = getScanList(df, source,
                                                                station, fmode,
-                                                               scans=args.scans)
+                                                               scans=args.scans,
+                                                               min_scan_gap=args.gap)
             print(f'Found no data for {source} for {station} in {fmode}.')
             continue
         try:
