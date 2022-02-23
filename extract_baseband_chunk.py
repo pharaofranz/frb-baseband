@@ -108,6 +108,7 @@ def extract_chunk(info, mjds, outdir, nsec=1, datarate=128):
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
     mjds.sort()
+    mjds_not_found = mjds.copy()
     info.sort(order='t0')
     for entry in info:
         infile = entry['file']
@@ -123,6 +124,7 @@ def extract_chunk(info, mjds, outdir, nsec=1, datarate=128):
         for mjd in mjds:
             if (mjd > start) and (mjd < stop):
                 print(f'MJD {mjd} is at {(mjd-start)*86400:.3f} seconds into {infile}')
+                mjds_not_found.remove(mjd)
                 while (mjd - nsec/86400.) < start:
                     print(mjd - nsec/86400., start)
                     nsec -= 0.1
@@ -138,8 +140,7 @@ def extract_chunk(info, mjds, outdir, nsec=1, datarate=128):
                 cmd = f'dd if={infile} of={outdir}/{fname}_{mjd:.8f}_plus-minus_{nsec:.1f}_seconds bs={frame_size} skip={frames_to_skip} count={frames_to_extract}'
                 print(f'Running {cmd}')
                 output = subprocess.check_output(cmd, shell=True)
-
-    return
+    return mjds_not_found
 
 
 def cleanup(mountdir):
@@ -156,5 +157,7 @@ if __name__ == "__main__":
     args = options()
     file_list = mount_files(args.experiment, args.telescope, args.mountdir)
     info = get_vdif_info(file_list)
-    extract_chunk(info, args.mjds, outdir=args.outdir, nsec=args.nsec, datarate=args.datarate)
+    missing = extract_chunk(info, args.mjds, outdir=args.outdir, nsec=args.nsec, datarate=args.datarate)
     cleanup(f'{args.mountdir}/{args.experiment}')
+    if missing:
+        print(f'\n Found no matching files for {missing}.\n')
