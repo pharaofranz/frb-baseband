@@ -72,6 +72,9 @@ def options():
     general.add_argument('--debug', action='store_true',
                          help='If set will raise errors to explain what went wrong instead '\
                          'of just saying that something did not work.')
+    general.add_argument('--mode', type=str, default=None,
+                         help='For some experiments we have several setups for the same dish -- different modes. If set '+
+                         'this will generate the config for this mode only. Otherwise it will generate the same for all modes.')
     return parser.parse_args()
 
 
@@ -449,6 +452,9 @@ def main(args):
     print(f'Found experiment {experiment}.')
     fmodes = list(df.fmode.unique())
     print(f'There are {len(fmodes)} frequency modes: {fmodes}')
+    if not args.mode == None:
+        fmodes = [args.mode]
+        print(f'Will generate config only for mode {fmodes}')
     source = args.source.replace('_D','').upper()
     station = args.telescope
     nchan = args.nchan
