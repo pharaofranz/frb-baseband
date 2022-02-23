@@ -141,8 +141,11 @@ def extract_chunk(info, mjds, outdir, nsec=1, datarate=128):
                 cmd = f'dd if={infile} of={outdir}/{fname}_{mjd:.8f}_plus-minus_{nsec:.1f}_seconds bs={frame_size} skip={frames_to_skip} count={frames_to_extract}'
                 print(f'Running {cmd}')
                 output = subprocess.check_output(cmd, shell=True)
+                # bring nsec back to orignal value in case it was modified
                 nsec = nsec_org
-    return mjds_not_found
+        # we don't need to search the mjds that we already found in the next outer loop again.
+        mjds = mjds_not_found.copy()
+    return mjds
 
 
 def cleanup(mountdir):
