@@ -3,7 +3,7 @@ import argparse
 from astropy.time import Time
 import os
 import pandas as pd
-from create_config import vex2dic, sched2df, fixStationName
+from create_config import vex2dic, sched2df, fixStationName, getFreq
 
 def options():
     parser = argparse.ArgumentParser()
@@ -31,6 +31,8 @@ def options():
     general.add_argument('--time_spent', action='store_true',
                          help='computes the time on source for each sources obseved by telescope.'\
                          '(-t and --sources need to be set)')
+    general.add_argument('--setup', action='store_true', default=None,
+                         help='If set will print frequency setup info.')
     return parser.parse_args()
 
 
@@ -48,12 +50,24 @@ def main(args):
         df.to_pickle(df_file)
     else:
         df = pd.read_pickle(df_file)
+    if not args.setup == None:
+        fmodes = list(df.fmode.unique())
+        stations = list(df.station.unique())
+        if not args.telescope == None:
+            stations = [args.telescope]
+        for station in stations:
+            for fmode in fmodes:
+                fref, bw, nIF, flipIF, recFmt = getFreq(vex, station, fmode)
+                print(f"Station {station} in mode {fmode} has the following setup:")
+                print(f"fref = {fref} MHz \n Bandwidth/IF = {bw} MHz\n Number of IFs = {nIF}\n recording Format is {recFmt}.")
+                print(f"Assuming 2-bit sampling, this implies a total data rate of {int(nIF) * int(bw) * 8} Mbps = {int(nIF) * int(bw)} MB/s\n\n")
+        return
     if not args.source == None:
         source = args.source.replace('_D','').upper()
     if not args.telescope == None:
         station = fixStationName(args.telescope).capitalize()
     scans = args.scans
-    if args.source == args.telescope == args.scans == None:
+    if args.source == args.telescope == args.scans == args.setup == None:
         stations = list(df.station.unique())
         sources = list(df.source.unique())
         fmodes = list(df.fmode.unique())
