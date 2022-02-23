@@ -110,6 +110,7 @@ def extract_chunk(info, mjds, outdir, nsec=1, datarate=128):
     mjds.sort()
     mjds_not_found = mjds.copy()
     info.sort(order='t0')
+    nsec_org = nsec
     for entry in info:
         infile = entry['file']
         start = entry['t0']
@@ -140,6 +141,7 @@ def extract_chunk(info, mjds, outdir, nsec=1, datarate=128):
                 cmd = f'dd if={infile} of={outdir}/{fname}_{mjd:.8f}_plus-minus_{nsec:.1f}_seconds bs={frame_size} skip={frames_to_skip} count={frames_to_extract}'
                 print(f'Running {cmd}')
                 output = subprocess.check_output(cmd, shell=True)
+                nsec = nsec_org
     return mjds_not_found
 
 
