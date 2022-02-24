@@ -483,7 +483,7 @@ def main(args):
         outfile = f'{outdir}/{experiment}_{station}_{source}.conf'
     first=True
     for i,fmode in enumerate(fmodes):
-        if len(fmodes) > 1:
+        if (len(fmodes) > 1) or (args.mode != None):
             if first:
                 outfile = f'{outfile}_{fmode}'
                 first = False
