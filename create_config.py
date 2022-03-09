@@ -4,6 +4,7 @@ from astropy.time import Time
 import os
 import pandas as pd
 
+
 def options():
     parser = argparse.ArgumentParser()
     general = parser.add_argument_group('General info about the data.')
@@ -48,7 +49,7 @@ def options():
                          'to FETCH.')
     general.add_argument('-k', '--keepVDIF', action='store_true',
                          help='If set will set the flag to keep the split VDIF files after '\
-                         'filterbanks have been created. By default those are removed.')    
+                         'filterbanks have been created. By default those are removed.')
     general.add_argument('-F', '--flag', type=str, default=None,
                          help='Path to a flag file to be used by Heimdall and Fetch in the'\
                          'searches. Defaults are set in greenburst.')
@@ -170,7 +171,7 @@ def getSourceCoords(vexdic, source):
         return ra, dec
     except:
         raise RunError(f'Could not get Ra and Dec for {source}.')
-    
+
 def sched2df(vexdic):
     '''
     Takes a dictionary with key 'SCHED' that contains all lines from the 'SCHED' section.
@@ -233,8 +234,8 @@ def sched2df(vexdic):
 
 def getScanList(df, source, station, mode, scans=None, evlbi=False):
     '''
-    For source, station and mode in vexfile, 
-    returns three lists: scanNo's, number of seconds to skip 
+    For source, station and mode in vexfile,
+    returns three lists: scanNo's, number of seconds to skip
     at the beginning of the scan, and number of secodns to process.
     '''
     station = fixStationName(station).capitalize()
@@ -291,14 +292,14 @@ def getScanList(df, source, station, mode, scans=None, evlbi=False):
                                (df.station == station)].length_sec.item()
                 skip_sec += df[(df.scanNo == scan+1) &
                                (df.station == station)].gap2previous_sec.item()
-        
+
         skip_secs.append(skip_sec-1 if skip_sec > 0 else skip_sec)
         start_scans.append(f'{scan:03d}')
     scanNames = [f'{scan:03d}' for scan in list(ddf.scanNo.values)]
     if not len(start_scans) == len(skip_secs) == len(scan_lengths) == len(scanNames):
         raise RunError('Not the same number of scans, seconds to skip and scan lengths.')
     return start_scans, skip_secs, scan_lengths, scanNames
-    
+
 class Error(Exception):
     """Base class for exceptions in this module."""
     pass
@@ -395,13 +396,13 @@ def writeConfig(outfile, experiment, source, station,
         templ = [line for i,line in enumerate(templ) if i not in delLines]
         for line in templ:
             if not line == '\n':
-                conf.append(line) 
+                conf.append(line)
     with open(outfile, 'w') as f:
         for line in conf:
             f.write(line)
     return
-    
-    
+
+
 def list2BashArray(l):
     '''
     Takes a regular list and turns it into a bash array for scripting.
@@ -419,7 +420,7 @@ def list2BashArray(l):
 
 def fixStationName(station, short=True):
     '''
-    Returns the 2-letter station code for station if short=True, else the 
+    Returns the 2-letter station code for station if short=True, else the
     long version that is TEMPO2-compliant.
     '''
     station = station.lower()
@@ -433,7 +434,7 @@ def fixStationName(station, short=True):
         return shortnames[longnames.index(station)] if short else station
     else:
         return station if short else longnames[shortnames.index(station)]
-    
+
 def main(args):
     vexfile = os.path.abspath(args.vexfile)
     vex = vex2dic(vexfile)
@@ -478,12 +479,12 @@ def main(args):
             ra, dec = getSourceCoords(vex, source)
         print(f'Could not get RA and Dec for {source}. Maybe not in observations? Check with obsinfo.py.')
         quit()
-    if outfile == None:
+    if outfile is None:
         outdir = os.getcwd()
         outfile = f'{outdir}/{experiment}_{station}_{source}.conf'
-    first=True
-    for i,fmode in enumerate(fmodes):
-        if (len(fmodes) > 1) or (args.mode != None):
+    first = True
+    for i, fmode in enumerate(fmodes):
+        if ((len(fmodes) > 1) or (args.mode is not None)) and (outfile is None):
             if first:
                 outfile = f'{outfile}_{fmode}'
                 first = False
@@ -524,9 +525,8 @@ def main(args):
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return
-        
-        
+
+
 if __name__ == "__main__":
     args = options()
     main(args)
-    
