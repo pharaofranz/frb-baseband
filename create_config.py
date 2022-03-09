@@ -76,6 +76,8 @@ def options():
     general.add_argument('--mode', type=str, default=None,
                          help='For some experiments we have several setups for the same dish -- different modes. If set '+
                          'this will generate the config for this mode only. Otherwise it will generate the same for all modes.')
+    general.add_argument('--split_only', action='store_true',
+                         help='If set will only split the baseband data into subbands and skip the filterbank stage.')
     return parser.parse_args()
 
 
@@ -331,7 +333,7 @@ def writeConfig(outfile, experiment, source, station,
                 scans, skips, lengths, scanNames, recFmt,
                 template=None, search=False, njobs=20, flipIF=False,
                 keepVDIF=False, flagfile=None, nbit=None, keepBP=False,
-                pol=None):
+                pol=None, split_only=False):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -367,6 +369,8 @@ def writeConfig(outfile, experiment, source, station,
         conf.append(f'nbit={nbit}\n')
     if not pol == None:
         conf.append(f'pol={pol}\n')
+    if split_only:
+        conf.append(f'split_vdif_only=1\n')
     conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
@@ -385,6 +389,8 @@ def writeConfig(outfile, experiment, source, station,
             params.append('keepVDIF')
         if keepBP:
             params.append('keepBP')
+        if split_only:
+            params.append('split_vdif_only')
         if not flagfile == None:
             params.append('flagFile')
         if not nbit == None:
@@ -514,14 +520,14 @@ def main(args):
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                         scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                        flagfile, args.nbit, args.keepBP, args.pol)
+                        flagfile, args.nbit, args.keepBP, args.pol, args.split_only)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                             scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                            flagfile, args.nbit, args.keepBP, args.pol)
+                            flagfile, args.nbit, args.keepBP, args.pol, args.split_only)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return

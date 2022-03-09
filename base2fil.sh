@@ -193,6 +193,7 @@ isMark5b=0      # by default we assume the raw data are VDIF data, if this set w
 keepVDIF=0      # by default split VDIF files are deleted to save space on disk, if set will keep those data
 flagFile=''     # optionally, a flag file can be passed
 keepBP=0        # if set the bandpass is not removed, i.e. -I0 is added to the digifil command
+split_vdif_only=0 # if set will not create filterbanks
 
 # load other vars from config file, params above will be overwritten if they are in the config file
 source ${1}
@@ -291,9 +292,9 @@ for scan in "${scans[@]}";do
         vdif_files=${vdif_files}${vdifnme}" "
         if [ ! -f ${vdifnme} ];then
             msg "Splitting the raw data."
-            #spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
-	    #	${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
-            /home/franz/git/frb-baseband/spif2file.sh ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+            spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+	    	${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
+            #/home/franz/git/frb-baseband/spif2file.sh ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
 		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1
@@ -310,9 +311,9 @@ for scan in "${scans[@]}";do
         vdif_files=${vdif_files}${vdifnme}" "
         if [ ! -f ${vdifnme} ];then
             msg "Splitting the raw data for even IFs."
-            #spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
-	#	      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
-            /home/franz/git/frb-baseband/spif2file.sh ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+            spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
+		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
+            #/home/franz/git/frb-baseband/spif2file.sh ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
 		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1
@@ -332,6 +333,9 @@ for scan in "${scans[@]}";do
 
     if [[ $? -eq 1 ]];then
         exit 1
+    fi
+    if [[ ${split_vdif_only} -eq 1 ]];then
+        continue
     fi
     file_size=`ls -l ${vdifnme} | cut -d ' ' -f 5`
 
