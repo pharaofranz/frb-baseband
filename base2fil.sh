@@ -15,7 +15,7 @@ helpmsg() {
     bright bursts such as giant pulses from pulsars or FRBs.\n
     \n
     In case you observed a known pulsar then the data will be folded and a diagnostic plot will be generated.\n
-    ''' 
+    '''
     echo -e $message
 }
 
@@ -85,7 +85,7 @@ check_vars() {
 	exit 1
     fi
 }
-	   
+
 
 compare_size() {
     # takes a list of files and compares their sizes
@@ -148,7 +148,7 @@ get_station_code(){
     station=${station,,} # set all to lower case
     c=0
     st=''
-    for sta in ${stations};do 
+    for sta in ${stations};do
 	if [[ ${sta} == ${station} ]];then
 	    st=${sts[c]}
 	    break
@@ -180,7 +180,7 @@ fifodir_base=/tmp/${USER}/
 vbsdir_base=${HOME}/vbs_data/    # baseband data is mounted here.
 start=0 #
 
-pol=2           # if set to 2 will create stokes I 
+pol=2           # if set to 2 will create stokes I
                 # if set to either 0 or 1 will process only one polarisation
                 # if set to 4 will create full pol data,
                 # if set to 3 will create (PP+QQ)^2
@@ -266,7 +266,7 @@ if [ ${isMark5b} -eq 0 ];then
     msg "getting bytes_per_frame from ${test_file}"
     frame_size=`get_frame_size ${test_file}`
     headersize=`get_header_size ${test_file}`
-    bytes_per_frame=`echo ${frame_size}-${headersize} | bc` 
+    bytes_per_frame=`echo ${frame_size}-${headersize} | bc`
     mode="VDIF_${bytes_per_frame}-${datarate}-${nbbc}-2"
 else
     msg "Assuming mark5b data with a payload of 10000 bytes per frame and a 16 byte header."
@@ -294,8 +294,6 @@ for scan in "${scans[@]}";do
             msg "Splitting the raw data."
             spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
 	    	${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
-            #/home/franz/git/frb-baseband/spif2file.sh ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
-		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1
     	fi
@@ -312,8 +310,6 @@ for scan in "${scans[@]}";do
         if [ ! -f ${vdifnme} ];then
             msg "Splitting the raw data for even IFs."
             spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
-		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
-            #/home/franz/git/frb-baseband/spif2file.sh ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
 		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
     	if [[ $? -eq 1 ]];then
     	    exit 1
@@ -349,7 +345,7 @@ for scan in "${scans[@]}";do
     headersize_split=`get_header_size ${vdifnme}`
 
     bytes_per_frame_split=`echo ${frame_size_split}-${headersize_split} | bc`
-    
+
     frames_per_second=`echo ${datarate}*1000000/8/${bytes_per_frame_split} | bc | cut -d '.' -f1`
     frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
     nsec=`echo "${file_size}/${frame_size_split}/${frames_per_second_per_band}" | bc`
