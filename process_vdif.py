@@ -111,8 +111,9 @@ def psr_info(psr):
 def id_generator(size=20, chars=string.ascii_uppercase + string.digits + string.ascii_lowercase):
     return ''.join(random.choice(chars) for _ in range(size))
 
+
 def make_hdr(psr, freq, filename, pol=2, usb=True, ra=None, dec=None,
-             bw=16.0, telescope='ONSALA85', tmp=False):
+             bw=16.0, telescope='ONSALA85', npol=2, tmp=False):
     if not usb:
         bw *= -1
     pre = '/tmp/' if tmp else os.path.dirname(filename)  # os.getcwd()
@@ -129,11 +130,12 @@ def make_hdr(psr, freq, filename, pol=2, usb=True, ra=None, dec=None,
                'INSTRUMENT VDIF\n' +\
                'MODE       PSR\n' +\
                'BASIS      Circular\n' +\
+               'NPOL       {7}' +\
                ''
     hdrfile = '{0}/{1}_pol{2}.hdr'.format(pre, os.path.basename(filename), pol)
     with open(hdrfile, 'w') as f:
         f.write(template.format(telescope, psr, ra, dec,
-                                freq, bw, filename))
+                                freq, bw, filename, npol))
     return hdrfile
 
 
