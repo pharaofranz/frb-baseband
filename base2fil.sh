@@ -248,8 +248,8 @@ n_baseband_files=`ls -l ${vbsdir} | wc -l`
 if [ ${n_baseband_files} -eq 1 ];then
     msg "${vbsdir} is empty."
     msg "Mounting files for ${experiment} into ${vbsdir}"
-    echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir}" -o allow_other
-    vbs_fs -n 8 -I "${experiment}*" ${vbsdir} -o allow_other
+    echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir} -o allow_other -o nonempty"
+    vbs_fs -n 8 -I "${experiment}*" ${vbsdir} -o allow_other -o nonempty
     sleep 3
     n_baseband_files=`ls -l ${vbsdir} | wc -l`
     if [ ${n_baseband_files} -eq 1 ];then
@@ -354,6 +354,7 @@ for scan in "${scans[@]}";do
                      $station $njobs_splice $skip $workdir_odd $pol $digifil_nthreads $tscrunch ${fifodir} \
 		     $nbit $keepBP
     # even IFs (i.e. USB)
+
     run_process_vdif $scanname "$ifs_even" "$target" $experiment $st $freqUSB_0 $bw u $nchan $nsec $start \
                      $station $njobs_splice $skip $workdir_even $pol $digifil_nthreads $tscrunch ${fifodir} \
 		     $nbit $keepBP
