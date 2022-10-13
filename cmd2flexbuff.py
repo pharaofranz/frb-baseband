@@ -10,7 +10,7 @@ import socket
 
 # Infos
 def usage_exit():
-	print 'Usage: stopfila10g.py [-u|--udp] <ip_address> <ip_port>'
+	print('Usage: stopfila10g.py [-u|--udp] <ip_address> <ip_port>')
 	sys.exit(-1)
 
 # Return a socket:  conn=(ip,port,use_tcp)
@@ -24,7 +24,7 @@ def getSocket(conn):
 		s.settimeout(1.0)
 		conn['socket'] = s
 	except:
-		print 'Connection to %s:%u failed' % (conn['ip'],conn['port'])
+		print('Connection to %s:%u failed' % (conn['ip'],conn['port']))
 		return None
 	return conn
 
@@ -65,7 +65,7 @@ def main(argv):
 	reply=sendRcv(conn, " ".join(argv[1:]) + '\r\n')
 	lines=reply.strip('\r\n').splitlines()
 	for line in lines:
-		print "Flexbuff: "+line
+		print("Flexbuff: "+line)
 #	reply.strip('\r\n')
 #        os.system("inject_snap \'\"command sent\'")
 	sys.exit(0)	
