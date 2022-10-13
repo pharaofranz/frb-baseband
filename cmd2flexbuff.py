@@ -2,8 +2,6 @@
 #
 # Python script to send individual commands to FILA10G & return result to FS log
 #
-
-
 import os
 import sys
 import socket
