@@ -174,8 +174,8 @@ check_vars
 # intiate some default vars
 
 workdir_odd_base=/scratch0/${USER}/   #  vdif files expected to be here
-workdir_even_base=/scratch1/${USER}/
-outdir_base=/data1/${USER}/           # final downsampled filterbank file goes here
+workdir_even_base=/scratch0/${USER}/
+outdir_base=/data/${USER}/           # final downsampled filterbank file goes here
 fifodir_base=/tmp/${USER}/
 vbsdir_base=${HOME}/vbs_data/    # baseband data is mounted here.
 start=0 #
