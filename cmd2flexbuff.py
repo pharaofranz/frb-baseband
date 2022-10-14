@@ -30,9 +30,10 @@ def getSocket(conn):
 
 
 # Send a command, wait for reply
-def sendRcv(conn,cmdstr):
+def sendRcv(conn, cmdstr):
         buffer_size = 2048
         cmdstr = '\n' + cmdstr.strip() + '\n'
+        cmdstr = cmdstr.encode()
         if conn['isTCP']:
                 conn['socket'].send(cmdstr)
         else:
