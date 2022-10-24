@@ -107,6 +107,7 @@ def main(args):
     T_onSource = 0
     T_onSource_noOverlap = 0
     exp_list = []
+    src_list = []
 
     # we go through all experiments and scans, using the range between
     # the lowest t_startMJD and the largest t_startMJD+length_sec(t_startMJD);
@@ -134,9 +135,12 @@ def main(args):
             if revert_stations_to_none is True:
                 stations = None
             continue
+        sources_observed = ddf.source.unique()
         # we compute the time diff between start times and disgard those
         # that are followed by a gap lasting more than 2 hours
         exp_list.append(exp)
+        for src_observed in sources_observed:
+            src_list.append(src_observed)
         mask = np.diff(starts, append=starts[-1])*24. < 2.
         start_mjds = np.array(starts[mask])
         end_mjds = np.array(start_mjds + ddf.length_sec[mask] / 86400)
@@ -153,6 +157,7 @@ def main(args):
             stations = None
     if args.verbose:
         print(f'Found data in experiments {exp_list}')
+        print(f'observed these unique sources: {set(src_list)}')
     print(f'I get {totalT * 24:.2f}hrs of telescope time')
     print(f'I get {T_onSource / 3600:.2f}hrs on source in total.')
     print(f'I get {T_onSource_noOverlap * 24:.2f}hrs on source taking overlap out.')
