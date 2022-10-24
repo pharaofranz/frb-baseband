@@ -191,9 +191,9 @@ def run_digifil(hdr, fil_out_dir=None, start=1, nsecs=120, nchan=128, overwrite=
         subprocess.check_call(cmd, shell=True, stdout=outfile,
                               stderr=errfile)
     except subprocess.CalledProcessError:
-        with open(outfile, 'r') as f:
+        with open(outfile_nme, 'r') as f:
             stdout = f.readlines()
-        with open(errfile, 'r') as f:
+        with open(errfile_nme, 'r') as f:
             stderr = f.readlines()
         raise RunError(f'Digifil died. \n stdout reports \n {stdout} \n stderr reports \n {stderr}')
     return filterbankfile
