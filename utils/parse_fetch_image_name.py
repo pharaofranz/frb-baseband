@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from astropy.time import Time
 import argparse
 import astropy.units as u
@@ -38,9 +38,11 @@ def options():
 def main(args):
     imgs = glob.glob(f'{args.path}/{args.prefix}*{args.mid}*.{args.type}')
     with open(args.outfile, 'w') as f:
+        first = True
         for img in imgs:
             img = img.strip()
-            scan = img.split(f'{args.dish}_no0')[1].split('_')[0]
+            if args.full:
+                scan = img.split(f'{args.dish}_no0')[1].split('_')[0]
             tstart = float(img.split('tstart_')[1].split('_')[0])
             tcand = float(img.split('tcand_')[1].split('_')[0])
             dm = round(float(img.split('dm_')[1].split('_')[0]), 1)
@@ -49,8 +51,9 @@ def main(args):
             if args.full:
                 f.write(f'{scan}: {mjd:.12f} {dm} {snr}\n')
             else:
-                f.write(f'{mjd:.12f},')
-
+                f.write(f'{mjd:.12f}') if first else f.write(f',{mjd:.12f}')
+            first = False
+        f.write('\n')
 if __name__ == "__main__":
     args = options()
     main(args)
