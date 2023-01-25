@@ -58,7 +58,7 @@ elif [[ ${mode} == 'VDIF_8000-16-2-2' ]];then
     #
 elif [[ ${mode} == 'VDIF_8000-32-4-2' ]];then
     frames_per_second=500
-    recipe="8>[0,1,2,3][4,5,6,7]:0-1"
+    recipe="8>[0,1,4,5][2,3,6,7]:0-1"
     #
 elif [[ ${mode} == 'VDIF_8000-512-16-2' ]];then
     frames_per_second=8000
