@@ -13,7 +13,7 @@ flipped=${9:-0} # recipes assume LO is below sky freq, if LO above sky freq LSB 
 vbs_fs_dir=${10:-"${HOME}/vbs_data/${experiment}/"}
 outdir1=${11:-"/scratch0/${USER}/${experiment}"}
 outdir2=${12:-"/scratch1/${USER}/${experiment}"}
-linkdir="/tmp/${USER}/"
+linkdir="/tmp/${USER}/${experiment}/${scanname}"
 
 mode=${mode^^} # set all upper case
 directs="${outdir1} ${outdir2} ${linkdir}"
@@ -116,6 +116,10 @@ echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Using mode ${mode}."
 echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Using recipe ${recipe}"
 
 let nif=${nif}-2 # we actually do a plus 1 below and go in steps of two
+# rare case of just one IF...
+if [[ ${nif} -lt 0 ]]; then
+    nif=0
+fi
 bytes_per_second=`echo "${input_framesize}*${frames_per_second}" | bc`
 bytes_per_minute=`echo "${bytes_per_second}*60" | bc`
 vbs_fs_file=${experiment}"_${station}_no0"${scan}
@@ -135,10 +139,16 @@ while [[ ${state} == 'active' ]];do
 done
 for i in `seq 0 2 ${nif}`;do
     let ii=$i+1
-    rm ${linkdir}/if_${i}
-    rm ${linkdir}/if_${ii}
+    if [[ -L ${linkdir}/if_${i} ]]; then
+        rm ${linkdir}/if_${i}
+    fi
+    if [[ -L ${linkdir}/if_${ii} ]]; then
+        rm ${linkdir}/if_${ii}
+    fi
     let odd_if=$i+1
     let even_if=$ii+1
+    echo "ln -s ${outdir1}/${vbs_vdif_file}_IF${odd_if}.vdif ${linkdir}/if_${i}"
+    echo "ln -s ${outdir2}/${vbs_vdif_file}_IF${even_if}.vdif ${linkdir}/if_${ii}"
     ln -s ${outdir1}/${vbs_vdif_file}_IF${odd_if}.vdif ${linkdir}/if_${i}
     ln -s ${outdir2}/${vbs_vdif_file}_IF${even_if}.vdif ${linkdir}/if_${ii}
 done
