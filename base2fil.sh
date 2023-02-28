@@ -1,6 +1,6 @@
 #!/bin/bash
 
-elpmsg() {
+helpmsg() {
     message='''
     \n
     This script takes a config file as input -- check out frb.conf that was shipped with this repo. \n
