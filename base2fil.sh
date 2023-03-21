@@ -142,8 +142,8 @@ get_header_size(){
 }
 
 get_station_code(){
-    stations='onsala85 onsala60 srt wsrt effelsberg torun irbene irbene16 medicina noto urumqi badary svetloe'
-    sts=(o8 o6 sr wb ef tr ir ib mc nt ur bd sv)
+    stations='onsala85 onsala60 srt wsrt effelsberg torun tianma irbene irbene16 medicina noto urumqi badary svetloe'
+    sts=(o8 o6 sr wb ef tr t6 ir ib mc nt ur bd sv)
     station=$1
     station=${station,,} # set all to lower case
     c=0
