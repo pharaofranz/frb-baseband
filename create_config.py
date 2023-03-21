@@ -17,9 +17,9 @@ def options():
     general.add_argument('-s', '--source', type=str, required=True,
                          help='REQUIRED. Source for which data are to be analysed.')
     general.add_argument('-t', '--telescope', type=str, required=True,
-                         choices=['o8', 'o6', 'sr', 'wb', 'ef', 'tr', \
+                         choices=['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 't6', \
                                   'ir', 'ib', 'mc', 'nt', 'ur', 'bd', 'sv', 'onsala85', 'onsala60', 'srt',\
-                                  'wsrt', 'effelsberg', 'torun', 'irbene', 'irbene16',\
+                                  'wsrt', 'effelsberg', 'torun', 'tianma', 'irbene', 'irbene16',\
                                   'medicina', 'noto', 'urumqi', 'badary', 'svetloe'],
                          help='REQUIRED. Station name or 2-letter code of dish to be searched.')
     general.add_argument('-S', '--scans', nargs='+', default=None, type=str,
@@ -430,9 +430,9 @@ def fixStationName(station, short=True):
     long version that is TEMPO2-compliant.
     '''
     station = station.lower()
-    longnames = ['onsala85', 'onsala60', 'srt', 'wsrt', 'effelsberg', 'torun',
+    longnames = ['onsala85', 'onsala60', 'srt', 'wsrt', 'effelsberg', 'torun', 'tianma',
                  'irbene', 'irbene16', 'medicina', 'noto', 'urumqi', 'badary', 'svetloe']
-    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 'ir', 'ib', 'mc', 'nt', 'ur', 'bd', 'sv']
+    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 't6', 'ir', 'ib', 'mc', 'nt', 'ur', 'bd', 'sv']
     if not (station in longnames) and not (station in shortnames):
         raise InputError(f'Station {station} not recognized. ' \
                          f'Must be any of {longnames} or {shortnames}')
