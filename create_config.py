@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import argparse
+import argparse #Makes it easy to write user-friendly command-line interfaces.
 from astropy.time import Time
 import os
-import pandas as pd
+import pandas as pd #Helps cleaning, transforming, manipulating and analyzing data.
+                    #Works very efficient with small data (usually from 100MB up to 1GB).
 
 
 def options():
