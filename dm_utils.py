@@ -98,7 +98,6 @@ def get_dm(src):
             cmd = "psrcat -c 'dm' -o short -nohead -nonumber {0}".format(src)
             dm = check_output(cmd, shell=True)
             isPulsar = True
-            print("isPulsar: ", dm.isPulsar)
             return float(dm)
         except:
             return None
@@ -124,5 +123,3 @@ def get_nchan(fil_file):
             nchan = line.split(':')[1].strip()
             break
     return int(nchan)
-
-   

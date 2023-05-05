@@ -197,13 +197,14 @@ pol=2           # If set to either 0 or 1, will process only one polarization.
 digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sensitivity...
 flipIF=0
 njobs_parallel=20
-submit2fetch=0  # If equal to zero, then the filterbanks will not be submited to fetch.
-nbit=8          # Bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floating point 32 bit.
-isMark5b=0      # By default the raw data is assumed to be VDIF data. Will instead assume Mark5B recordings if not set to 0.
-keepVDIF=0      # By default split VDIF files are deleted to save space on disk. These files will be kept if not 0. 
-flagFile=''     # Optionally, a flag file can be passed.
-keepBP=0        # If set the bandpass is not removed, i.e. -I0 is added to the digifil command.
+submit2fetch=0    # If equal to zero, then the filterbanks will not be submited to fetch.
+nbit=8            # Bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floating point 32 bit.
+isMark5b=0        # By default the raw data is assumed to be VDIF data. Will instead assume Mark5B recordings if not set to 0.
+keepVDIF=0        # By default split VDIF files are deleted to save space on disk. These files will be kept if not 0. 
+flagFile=''       # Optionally, a flag file can be passed.
+keepBP=0          # If set the bandpass is not removed, i.e. -I0 is added to the digifil command.
 split_vdif_only=0 # Filterbanks will not be created if this is set to nonzero. 
+online_process=0  # Each scan will get its own directory if this is set to nonzero (this is used for the online pipeline).
 
 # Load other variables from config file, parameters above will be overwritten if they are in the config file
 source ${1}
@@ -234,6 +235,11 @@ if [[ $? -eq 1 ]];then
     exit 1
 fi
 
+if ! [ ${online_process} -eq 0 ]; then
+    scanname=${scannames[0]}
+    vbsdir=${vbsdir}/${experiment}_${st}_no0${scanname} 
+fi
+
 let max_odd=${nif}-1
 ifs_odd=`seq 1 2 ${max_odd}`
 ifs_even=`seq 2 2 ${nif}`
@@ -253,13 +259,20 @@ fi
 if ! [ -d ${fifodir} ];then
     mkdir -p ${fifodir}
 fi
+
 n_baseband_files=`ls -l ${vbsdir} | wc -l`
 if [ ${n_baseband_files} -eq 1 ];then
     msg "${vbsdir} is empty."
-    msg "Mounting files for ${experiment} into ${vbsdir}"
-    echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir} -o allow_other -o nonempty"
-    vbs_fs -n 8 -I "${experiment}*" ${vbsdir} -o allow_other -o nonempty
-    sleep 3
+    if ! [ ${online_process} ] -eq 0 ]; then
+        msg "Mounting file ${experiment}_${st}_no0${scanname} into ${vbsdir}" 
+        echo " Running vbs_fs -n 8 -I \"${experiment}_${st}_no0${scanname}\" ${vbsdir} -o allow_other -o nonempty"
+        vbs_fs -n 8 -I "${experiment}_${st}_no0${scanname}" ${vbsdir} -o allow_other -o nonempty 
+    else
+        msg "Mounting files for ${experiment} into ${vbsdir}"
+        echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir} -o allow_other -o nonempty"
+        vbs_fs -n 8 -I "${experiment}*" ${vbsdir} -o allow_other -o nonempty
+        sleep 3
+    fi
     n_baseband_files=`ls -l ${vbsdir} | wc -l`
     if [ ${n_baseband_files} -eq 1 ];then
 	msg "Something went wrong, still have no files in ${vbsdir}."
@@ -268,7 +281,6 @@ if [ ${n_baseband_files} -eq 1 ];then
     fi
 fi
 msg "There are ${n_baseband_files} baseband files in ${vbsdir}"
-
 
 if [ ${isMark5b} -eq 0 ];then
     test_file=`ls ${vbsdir}/*_${st}_* | head -1`
