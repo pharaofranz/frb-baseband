@@ -3,7 +3,7 @@
 from subprocess import PIPE, Popen, check_output
 import sys
 
-isPulsar = False
+isPulsar = False  # Is used to check if the source is a pulsar or not.
 
 # Until I figure out how to send a message around that contains several arguments
 # I hardcode the FRB DMs here and have a function for pulsars below

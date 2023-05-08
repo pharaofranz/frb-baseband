@@ -236,8 +236,8 @@ if [[ $? -eq 1 ]];then
 fi
 
 if ! [ ${online_process} -eq 0 ]; then
-    scanname=${scannames[0]}
-    vbsdir=${vbsdir}/${experiment}_${st}_no0${scanname} 
+    scan=${scans[0]}
+    vbsdir=${vbsdir}/${experiment}_${st}_no0${scan} 
 fi
 
 let max_odd=${nif}-1
@@ -264,9 +264,9 @@ n_baseband_files=`ls -l ${vbsdir} | wc -l`
 if [ ${n_baseband_files} -eq 1 ];then
     msg "${vbsdir} is empty."
     if ! [ ${online_process} ] -eq 0 ]; then
-        msg "Mounting file ${experiment}_${st}_no0${scanname} into ${vbsdir}" 
-        echo " Running vbs_fs -n 8 -I \"${experiment}_${st}_no0${scanname}\" ${vbsdir} -o allow_other -o nonempty"
-        vbs_fs -n 8 -I "${experiment}_${st}_no0${scanname}" ${vbsdir} -o allow_other -o nonempty 
+        msg "Mounting file ${experiment}_${st}_no0${scan} into ${vbsdir}" 
+        echo " Running vbs_fs -n 8 -I \"${experiment}_${st}_no0${scan}\" ${vbsdir} -o allow_other -o nonempty"
+        vbs_fs -n 8 -I "${experiment}_${st}_no0${scan}" ${vbsdir} -o allow_other -o nonempty 
     else
         msg "Mounting files for ${experiment} into ${vbsdir}"
         echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir} -o allow_other -o nonempty"
