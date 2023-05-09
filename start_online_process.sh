@@ -8,6 +8,6 @@ if [ ${ExpName:0:1} == "p" ]; then
     if [ ${ExpName:1:1} != "r" ]; then
         NewScan=$(inject_snap -w "mk5=scan_set?") # Determine the scan name
         ScanName=$(cut -f3 -d":" <<< $NewScan)
-        ssh oper@ebur "online_process.sh ${ScanName}"
+        ssh oper@ebur "/home/cecilia/Documents/frb-baseband/online_process.sh ${ScanName}"
     fi
 fi

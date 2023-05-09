@@ -18,9 +18,6 @@ helpmsg() {
     echo -e $message
 }
 
-# Q: What does -ge do?
-# jobs -p: Lists process IDs.
-# wc -l: Print the newline counts.
 pwait() {
     # helper to parallelize jobs
     while [ $(jobs -p | wc -l) -ge $1 ]; do
@@ -51,14 +48,14 @@ run_process_vdif() {
     tscrunch=${18}
     fifodir=${19}
     nbit=${20}
-    keepBP=${21} # Q: BP is short for?
-    bandstep=`echo $bw+$bw | bc` # bc: Gives access to math library. 
+    keepBP=${21} 
+    bandstep=`echo $bw+$bw | bc` 
 
     keepBP_flag=''
     if [[ $keepBP -gt 0 ]]; then
 	keepBP_flag='--keepBP'
     fi
-    for i in ${ifs};do # Q: What happens here?
+    for i in ${ifs};do 
         process_vdif ${source} ${workdir}/${experiment}_${st}_no0${scanname}_IF${i}.vdif  \
                      -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
                      --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} \
@@ -68,7 +65,6 @@ run_process_vdif() {
     done
 }
 
-# Q: What happens here?
 check_progs() {
     progs='process_vdif spif2file cmd2flexbuff setfifo bc vdif_print_headers splice digifil'
     for prog in $progs; do
@@ -89,7 +85,6 @@ check_vars() {
     fi
 }
 
-# Q: Why compare the file sizes?
 compare_size() {
     # takes a list of files and compares their sizes
     # the list is something like files='f1 f2 f3...fn'
@@ -218,17 +213,17 @@ fi
 # Then we source that new input file.
 # In case of multiple frequency setups for same source and station, then run several times from here.
 
-workdir_odd=${workdir_odd_base}/${experiment}   #  vdif files expected to be here.
+workdir_odd=${workdir_odd_base}/${experiment}    #  vdif files expected to be here.
 workdir_even=${workdir_even_base}/${experiment}
-outdir=${outdir_base}/${experiment}           # Final downsampled filterbank file goes here.
+outdir=${outdir_base}/${experiment}              # Final downsampled filterbank file goes here.
 fifodir=${fifodir_base}/fifos/
-vbsdir=${vbsdir_base}/${experiment}    # Baseband data is mounted here.
+vbsdir=${vbsdir_base}/${experiment}              # Baseband data is mounted here.
 
 # Nothing to change below this line
 datarate=`echo $bw*$nif*8 | bc | cut -d '.' -f1` # bw in MHz, 8 = 2pol*2bitsamples*2nyquist
 nbbc=`echo ${nif}*2 | bc | cut -d '.' -f1`
 
-freqUSB_0=`echo ${freqLSB_0}+${bw} | bc`  # central frequency of lowest USB channel (typically IF2)
+freqUSB_0=`echo ${freqLSB_0}+${bw} | bc`         # central frequency of lowest USB channel (typically IF2)
 st=`get_station_code ${station}`
 if [[ $? -eq 1 ]];then
     echo $st
