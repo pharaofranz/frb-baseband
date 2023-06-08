@@ -5,10 +5,9 @@ helpmsg() {
     \n
     This script takes a config file as input -- check out frb.conf that was shipped with this repo. \n
     \n
-    Essentially, this script takes baseband data (i.e. raw voltages) stored on a Flexbuff in VDIF format \n
-    and converts those data to channelised filterbank files. It can generate either Stokes I, full polarisation \n
-    filterbanks or single polarisation data. Note that the script assumes circular polarisation as is common in \n
-    VLBI recordings.\n
+    Essentially, this script takes baseband data (i.e. raw voltages) stored on a Flexbuff in VDIF format and  \n
+    converts those data to channelised filterbank files. It can generate either Stokes I, full polarisation or \n
+    single polarisation data. Note that the script assumes circular polarisation as is common in VLBI recordings.\n
     \n
     In case you have FETCH installed that is running with a rabbitmq-queue, then the filterbanks will we sent off\n
     to that queue. I.e., this script can be used as an end-to-end pipeline to search for millisecond-duration \n
@@ -49,14 +48,14 @@ run_process_vdif() {
     tscrunch=${18}
     fifodir=${19}
     nbit=${20}
-    keepBP=${21}
-    bandstep=`echo $bw+$bw | bc`
+    keepBP=${21} 
+    bandstep=`echo $bw+$bw | bc` 
 
     keepBP_flag=''
     if [[ $keepBP -gt 0 ]]; then
 	keepBP_flag='--keepBP'
     fi
-    for i in ${ifs};do
+    for i in ${ifs};do 
         process_vdif ${source} ${workdir}/${experiment}_${st}_no0${scanname}_IF${i}.vdif  \
                      -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
                      --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} \
@@ -86,7 +85,6 @@ check_vars() {
     fi
 }
 
-
 compare_size() {
     # takes a list of files and compares their sizes
     # the list is something like files='f1 f2 f3...fn'
@@ -115,20 +113,26 @@ compare_size() {
     done
     msg "Seems fine, final size is $size"
 }
+
 submit_fetch() {
     # argument $1 points at the filterbank file
     # argument $2 points at the flag file -- can be empty.
      /home/franz/.conda/envs/fetch/bin/python /home/franz/software/src/greenburst/pika_send.py -q "stage01_queue" -m "${1} ${2}"
 }
+
+# Prints out the date and time.
 msg() {
     echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` ${1}"
 }
 
+# tail: prints the last 10 lines.
 get_frame_size(){
     frame_size=`vdif_print_headers ${1} -n1 | tail -1 | cut -d '=' -f9`
     echo ${frame_size}
 }
 
+# Q: What does the -l do?
+# Q: What is legacy?
 get_header_size(){
     l=`vdif_print_headers ${1} -n1 | tail -1 | cut -d ',' -f6`
     if [[ ${l} -eq 'legacy = 0' ]]; then
@@ -171,58 +175,64 @@ fi
 check_progs
 check_vars
 
-# intiate some default vars
+# Intiate some default variables
 
 workdir_odd_base=/scratch0/${USER}/   #  vdif files expected to be here
 workdir_even_base=/scratch1/${USER}/
-outdir_base=/data1/${USER}/           # final downsampled filterbank file goes here
+outdir_base=/data1/${USER}/           # Final downsampled filterbank file goes here.
 fifodir_base=/tmp/${USER}/
 vbsdir_base=${HOME}/vbs_data/    # baseband data is mounted here.
 start=0 #
 
-pol=2           # if set to 2 will create stokes I
-                # if set to either 0 or 1 will process only one polarisation
-                # if set to 4 will create full pol data,
-                # if set to 3 will create (PP+QQ)^2
+pol=2           # If set to either 0 or 1, will process only one polarization.
+                # If set to 2 will create Stokes I.
+                # If set to 3 will create (PP+QQ)^2.
+                # If set to 4 will create full polarization data.
+                
 digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sensitivity...
 flipIF=0
 njobs_parallel=20
-submit2fetch=0  # if equal to zero will not submit the filterbanks to fetch
-nbit=8          # bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floating point 32 bit
-isMark5b=0      # by default we assume the raw data are VDIF data, if this set will assume Mark5B recordings
-keepVDIF=0      # by default split VDIF files are deleted to save space on disk, if set will keep those data
-flagFile=''     # optionally, a flag file can be passed
-keepBP=0        # if set the bandpass is not removed, i.e. -I0 is added to the digifil command
-split_vdif_only=0 # if set will not create filterbanks
+submit2fetch=0    # If equal to zero, then the filterbanks will not be submited to fetch.
+nbit=8            # Bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floating point 32 bit.
+isMark5b=0        # By default the raw data is assumed to be VDIF data. Will instead assume Mark5B recordings if not set to 0.
+keepVDIF=0        # By default split VDIF files are deleted to save space on disk. These files will be kept if not 0. 
+flagFile=''       # Optionally, a flag file can be passed.
+keepBP=0          # If set the bandpass is not removed, i.e. -I0 is added to the digifil command.
+split_vdif_only=0 # Filterbanks will not be created if this is set to nonzero. 
+online_process=0  # Each scan will get its own directory if this is set to nonzero (this is used for the online pipeline).
 
-# load other vars from config file, params above will be overwritten if they are in the config file
+# Load other variables from config file, parameters above will be overwritten if they are in the config file
 source ${1}
 if [[ $? -eq 1 ]];then
     helpmsg
     exit 1
 fi
 
-# run parse_vex.py with input from ${1}
+# Run parse_vex.py with input from ${1}.
 # parse_vex.py takes config files and appends necessary info.
-# then we source that new input file.
-# in case of multiple freq setups for same source and station run
-# several times from here
+# Then we source that new input file.
+# In case of multiple frequency setups for same source and station, then run several times from here.
 
-workdir_odd=${workdir_odd_base}/${experiment}   #  vdif files expected to be here
+workdir_odd=${workdir_odd_base}/${experiment}    #  vdif files expected to be here.
 workdir_even=${workdir_even_base}/${experiment}
-outdir=${outdir_base}/${experiment}           # final downsampled filterbank file goes here
+outdir=${outdir_base}/${experiment}              # Final downsampled filterbank file goes here.
 fifodir=${fifodir_base}/fifos/
-vbsdir=${vbsdir_base}/${experiment}    # baseband data is mounted here.
+vbsdir=${vbsdir_base}/${experiment}              # Baseband data is mounted here.
 
-# nothing to change below this line
+# Nothing to change below this line
 datarate=`echo $bw*$nif*8 | bc | cut -d '.' -f1` # bw in MHz, 8 = 2pol*2bitsamples*2nyquist
 nbbc=`echo ${nif}*2 | bc | cut -d '.' -f1`
 
-freqUSB_0=`echo ${freqLSB_0}+${bw} | bc`  # central frequency of lowest USB channel (typically IF2)
+freqUSB_0=`echo ${freqLSB_0}+${bw} | bc`         # central frequency of lowest USB channel (typically IF2)
 st=`get_station_code ${station}`
 if [[ $? -eq 1 ]];then
     echo $st
     exit 1
+fi
+
+if ! [ ${online_process} -eq 0 ]; then
+    scan=${scans[0]}
+    vbsdir=${vbsdir}/${experiment}_${st}_no0${scan} 
 fi
 
 let max_odd=${nif}-1
@@ -244,13 +254,20 @@ fi
 if ! [ -d ${fifodir} ];then
     mkdir -p ${fifodir}
 fi
+
 n_baseband_files=`ls -l ${vbsdir} | wc -l`
 if [ ${n_baseband_files} -eq 1 ];then
     msg "${vbsdir} is empty."
-    msg "Mounting files for ${experiment} into ${vbsdir}"
-    echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir} -o allow_other -o nonempty"
-    vbs_fs -n 8 -I "${experiment}*" ${vbsdir} -o allow_other -o nonempty
-    sleep 3
+    if ! [ ${online_process} -eq 0 ]; then
+        msg "Mounting file ${experiment}_${st}_no0${scan} into ${vbsdir}" 
+        echo " Running vbs_fs -n 8 -I \"${experiment}_${st}_no0${scan}\" ${vbsdir} -o allow_other -o nonempty"
+        vbs_fs -n 8 -I "${experiment}_${st}_no0${scan}" ${vbsdir} -o allow_other -o nonempty 
+    else
+        msg "Mounting files for ${experiment} into ${vbsdir}"
+        echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir} -o allow_other -o nonempty"
+        vbs_fs -n 8 -I "${experiment}*" ${vbsdir} -o allow_other -o nonempty
+        sleep 3
+    fi
     n_baseband_files=`ls -l ${vbsdir} | wc -l`
     if [ ${n_baseband_files} -eq 1 ];then
 	msg "Something went wrong, still have no files in ${vbsdir}."
@@ -259,7 +276,6 @@ if [ ${n_baseband_files} -eq 1 ];then
     fi
 fi
 msg "There are ${n_baseband_files} baseband files in ${vbsdir}"
-
 
 if [ ${isMark5b} -eq 0 ];then
     test_file=`ls ${vbsdir}/*_${st}_* | head -1`
