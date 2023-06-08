@@ -12,6 +12,8 @@ install:
 	cp spif2file.sh $(INSTALLDIR)/spif2file ; chmod u+x,g+x,o+x $(INSTALLDIR)/spif2file
 	cp create_config.py $(INSTALLDIR)/create_config.py ;  chmod u+x,g+x,o+x $(INSTALLDIR)/create_config.py
 	cp obsinfo.py $(INSTALLDIR)/obsinfo.py ;  chmod u+x,g+x,o+x $(INSTALLDIR)/obsinfo.py
+	cp submit_job.py $(INSTALLDIR)/submit_job.py ; chmod u+x,g+x,o+x $(INSTALLDIR)/submit_job.py 
+	cp online_process.sh $(INSTALLDIR)/online_process.sh ; chmod u+x,g+x,o+x $(INSTALLDIR)/online_process.sh
 
 clean:
 	rm -f $(INSTALLDIR)/base2fil
@@ -21,3 +23,5 @@ clean:
 	rm -f $(INSTALLDIR)/spif2file
 	rm -f $(INSTALLDIR)/create_config.py
 	rm -f $(INSTALLDIR)/obsinfo.py
+	rm -f $(INSTALLDIR)/submit_job.py
+	rm -f $(INSTALLDIR)/online_process.sh
