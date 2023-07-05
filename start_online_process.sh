@@ -16,6 +16,7 @@ if [ ${ExpName:0:1} == "p" ]; then
     if [ ${ExpName:1:1} != "r" ]; then
         NewScan=$(inject_snap -w "mk5=scan_set?") # Determine the scan name
         ScanName=$(cut -f3 -d":" <<< $NewScan | sed 's/ //g') # the sed removes white space
-        ssh oper@ebur "/home/cecilia/Documents/frb-baseband/online_process.sh 1&> ${LogDir}/${ScanName}.log"
+        ssh oper@ebur "online_process.sh ${ScanName} 1&> ${LogDir}/${ScanName}.log"
     fi
 fi
+
