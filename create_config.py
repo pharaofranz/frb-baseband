@@ -240,7 +240,6 @@ def sched2df(vexdic):
 
         previous_stop = start + length_sec / 86400.
         first_scan = False
-    print(scans)    
     return scans
 
 def getScanList(df, source, station, mode, scans=None, evlbi=False):
