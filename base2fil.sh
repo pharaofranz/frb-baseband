@@ -117,7 +117,7 @@ compare_size() {
 submit_fetch() {
     # argument $1 points at the filterbank file
     # argument $2 points at the flag file -- can be empty.
-     /home/franz/.conda/envs/fetch/bin/python /home/franz/software/src/greenburst/pika_send.py -q "stage01_queue" -m "${1} ${2}"
+     /home/franz/.conda/envs/fetch/bin/python /home/franzkirsten/git/greenburst/pika_send.py -q "stage01_queue" -m "${1} ${2}"
 }
 
 # Prints out the date and time.
@@ -376,7 +376,7 @@ for scan in "${scans[@]}";do
 		     $nbit $keepBP
 
     # increase the fifo buffer size to speed things up, but wait till splice is running first
-    sleep 2 && for filfifo in ${splice_list}; do \
+    sleep 4 && for filfifo in ${splice_list}; do \
         setfifo ${filfifo} 1048576; \
         sleep 0.2;done && msg "Changed fifo sizes successfuly." &
     if [[ $submit2fetch -ne 0 ]]; then
