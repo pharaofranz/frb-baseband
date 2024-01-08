@@ -177,17 +177,20 @@ def getSourceCoords(vexdic, source):
     except:
         raise RunError(f'Could not get Ra and Dec for {source}.')
 
+
 def sched2df(vexdic):
     '''
     Takes a dictionary with key 'SCHED' that contains all lines from the 'SCHED' section.
     Returns a pandas dataframe with all the scans and their info.
     '''
     lines = vexdic['SCHED']
-    scans = pd.DataFrame(columns=['scanNo', 't_startMJD', 'gap2previous_sec', 'length_sec',
-                                  'missing_sec', 'fmode', 'source', 'station'])
+    columns = ['scanNo', 't_startMJD', 'gap2previous_sec', 'length_sec',
+               'missing_sec', 'fmode', 'source', 'station']
+
     start_lineNums = [i for i,line in enumerate(lines) if line.startswith('scan')]
     stop_lineNums = [i for i,line in enumerate(lines) if line.startswith('endscan')]
     first_scan = True
+    scans = []
     for start_lineNum,stop_lineNum in zip(start_lineNums, stop_lineNums):
         scanNo = int(lines[start_lineNum].replace('scan No', '').replace(';',''))
         first_station = True
@@ -225,17 +228,14 @@ def sched2df(vexdic):
                         if not length_tmp == length_sec:
                             print(f'\nWARNING: Not all stations have the same scan length in scanNo {scanNo}.\n')
                     length_tmp = length_sec
-                    scans = scans.append({'scanNo': scanNo, 't_startMJD': start,\
-                                          'gap2previous_sec': gap2previous, \
-                                          'length_sec': length_sec, 'missing_sec': missing_sec,\
-                                          'fmode': mode, 'source': source,
-                                          'station': station}, ignore_index=True)
+                    scans.append([scanNo, start, gap2previous, length_sec, missing_sec, mode, source, station])
                 else:
                     continue
-
         previous_stop = start + length_sec / 86400.
         first_scan = False
+    scans = pd.DataFrame(scans, columns=columns)
     return scans
+
 
 def getScanList(df, source, station, mode, scans=None, evlbi=False):
     '''
