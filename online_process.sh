@@ -1,18 +1,38 @@
 #!/bin/bash
-# This script takes a scan name as input and then outputs the experiment name, 
-# telescope name, scan number, source name, lowest reference frequency, IF 
-# and number of IFs to submit_job.py, which then submits the job.
+
+VexDir=/home/oper/ # Directory of the vex-file.
+
+
+# Generates a help message.
+case $1 in
+ -[h?] | --help)
+    cat <<-____HALP
+        Usage: ${0##*/} [ --help ]
+        This script takes a scan name as input and then outputs the experiment name,
+        telescope name, source name, scan number, lowest reference frequency, IF and
+        number of IFs to submit_job.py, which then submits the job. The script also 
+        checks if a pandas dataframe already exists, so the path to the vex-file
+        directory needs to be added (in the beginning of the script).
+____HALP
+        exit 0;;
+esac
+
 
 ScanName=$1
 ExpName=$(echo ${ScanName/_*/})
 TelName=$(cut -f2 -d"_" <<< $ScanName)
 ScanNbr=$(echo ${ScanName##*_} | grep -o -E "[0-9]+")
 
-SourceName=$(obsinfo.py -i /home/oper/"$ExpName".vex -t $TelName -S $ScanNbr | tr -s ' ' ',' | csvcut -c 'source' | sed -n '2 p') 
-FreqInfo=$(obsinfo.py -i /home/oper/"$ExpName".vex -s $SourceName --setup -t $TelName)
+VexFile="$VexDir$ExpName".vex
+if test -f "$VexFile".df; then # Checks if a pandas dataframe already exist. If it does, it will be removed.
+    rm "$VexFile".df
+fi
+
+SourceName=$(obsinfo.py -i $VexFile -t $TelName -S $ScanNbr | tr -s ' ' ',' | csvcut -c 'source' | sed -n '2 p') 
+FreqInfo=$(obsinfo.py -i $VexFile -s $SourceName --setup -t $TelName)
 
 var1=$(echo $FreqInfo | grep -oP '(?<=fref).*?(?=MHz)')
-f_low=$(echo ${var1##*=})
+fref=$(echo ${var1##*=})
 
 var2=$(echo $FreqInfo | grep -oP '(?<=Bandwidth/IF).*(?=MHz)')
 IF=$(echo ${var2##*=})
@@ -20,4 +40,4 @@ IF=$(echo ${var2##*=})
 var3=$(echo $FreqInfo |  grep -oP '(?<=Number).*(?=recording)')
 NbrOfIF=$(echo ${var3##*=})
 
-python3 /home/cecilia/Documents/frb-baseband/submit_job.py $ExpName $TelName $ScanNbr $SourceName $f_low $IF $NbrOfIF
+submit_job.py -e $ExpName -t $TelName -s $SourceName -S $ScanNbr -f $fref -I $IF -n $NbrOfIF
