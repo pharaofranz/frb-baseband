@@ -91,9 +91,10 @@ else
 fi
 
 if [[ ${mode:0:4} == 'VDIF' ]]; then
-    output_payload=8000
+    payload=${mode:5:4}
+    output_payload=${payload}
     input_headersize=32
-    input_payload=8000
+    input_payload=${payload}
 
 elif [[ ${mode:0:6} == 'MARK5B' ]]; then
     output_payload=10000
