@@ -18,8 +18,8 @@ if [ ${LogName:0:1} == "p" ]; then
     if [ ${LogName:1:1} != "r" ]; then
         NewScan=$(inject_snap -w "mk5=scan_set?") # Determine the scan name
         ScanName=$(cut -f3 -d":" <<< $NewScan | sed 's/ //g') # the sed removes white space
-	scp /usr2/sched/${ExpName}.vex oper@ebur:${VexDir}
-        ssh oper@ebur "online_process.sh ${ScanName} 1&> ${LogDir}/${ScanName}.log"
+	scp /usr2/sched/${ExpName}.vex oper@sleipnir:${VexDir}
+        ssh oper@sleipnir "online_process.sh ${ScanName} 1&> ${LogDir}/${ScanName}.log"
     fi
 fi
 

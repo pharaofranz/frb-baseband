@@ -36,7 +36,7 @@ def options():
 def main(args):
     TotalSlots = 38 # Total number of job slots.
     ConfigDir = "/home/oper/frb_processing/configs/"
-    FlagDir = "/data1/franz/fetch/Standard/"
+    FlagDir = "/data1/franz/fetch/flags/"
     VexFile = args.vex
     ExpName = args.expname if args.expname is not None else (os.path.basename(args.vex)).split('.')[0]
     j = 6 # 2 to the power of j = wanted time resolution (or the lowest value for the system). In us.
