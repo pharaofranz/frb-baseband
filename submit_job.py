@@ -121,7 +121,7 @@ def main(args):
         SubmitJob = "base2fil " + ConfigFile
         # Check so there are enough available job slots before submitting the job.
         MaxBusySlots = int(TotalSlots-(NbrOfIF+1))
-        CheckDigifil = "while [ $(ps -ef | grep digifil | grep -v /bin/sh | wc -l) -gt " + str(MaxBusySlots) + " ]; do sleep 30; done"
+        CheckDigifil = "while [ $(ps -ef | grep digifil | grep -v /bin/sh | wc -l) -gt " + str(MaxBusySlots) + " ]; do echo 'waiting for a slot';sleep 60; done"
         os.system(CheckDigifil)
         os.system(SubmitJob)
     return
