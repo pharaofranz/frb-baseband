@@ -337,6 +337,12 @@ for scan in "${scans[@]}";do
         mkfifo ${filfifo}
         splice_list=${filfifo}' '${splice_list}
     done
+    if ! [ ${online_process} -eq 0 ]; then
+        # to avoid hitting the mount_max limit in /etc/fuse.conf we unmount each scan that is done
+        # but we do so only in 'online' mode because in 'offline' mode we would mess with the
+        # processing that assumes all files to be in the <experiment> directory.
+        fusermount -u ${vbsdir}      
+    fi    
 
     let njobs_splice=${njobs_parallel} #${nif}+1 # 1 extra for splice, another for digfil
 
