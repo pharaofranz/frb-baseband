@@ -48,14 +48,14 @@ run_process_vdif() {
     tscrunch=${18}
     fifodir=${19}
     nbit=${20}
-    keepBP=${21} 
-    bandstep=`echo $bw+$bw | bc` 
+    keepBP=${21}
+    bandstep=`echo $bw+$bw | bc`
 
     keepBP_flag=''
     if [[ $keepBP -gt 0 ]]; then
 	keepBP_flag='--keepBP'
     fi
-    for i in ${ifs};do 
+    for i in ${ifs};do
         process_vdif ${source} ${workdir}/${experiment}_${st}_no0${scanname}_IF${i}.vdif  \
                      -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
                      --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} \
@@ -188,17 +188,17 @@ pol=2           # If set to either 0 or 1, will process only one polarization.
                 # If set to 2 will create Stokes I.
                 # If set to 3 will create (PP+QQ)^2.
                 # If set to 4 will create full polarization data.
-                
+
 digifil_nthreads=1 # speeds up the creation of the filterbanks but you lose sensitivity...
 flipIF=0
 njobs_parallel=20
 submit2fetch=0    # If equal to zero, then the filterbanks will not be submited to fetch.
 nbit=8            # Bit depth of fitlerbanks. Can be 2, 8, 16, -32. -32 is floating point 32 bit.
 isMark5b=0        # By default the raw data is assumed to be VDIF data. Will instead assume Mark5B recordings if not set to 0.
-keepVDIF=0        # By default split VDIF files are deleted to save space on disk. These files will be kept if not 0. 
+keepVDIF=0        # By default split VDIF files are deleted to save space on disk. These files will be kept if not 0.
 flagFile=''       # Optionally, a flag file can be passed.
 keepBP=0          # If set the bandpass is not removed, i.e. -I0 is added to the digifil command.
-split_vdif_only=0 # Filterbanks will not be created if this is set to nonzero. 
+split_vdif_only=0 # Filterbanks will not be created if this is set to nonzero.
 online_process=0  # Each scan will get its own directory if this is set to nonzero (this is used for the online pipeline).
 
 # Load other variables from config file, parameters above will be overwritten if they are in the config file
@@ -232,7 +232,7 @@ fi
 
 if ! [ ${online_process} -eq 0 ]; then
     scan=${scans[0]}
-    vbsdir=${vbsdir}/${experiment}_${st}_no0${scan} 
+    vbsdir=${vbsdir}/${experiment}_${st}_no0${scan}
 fi
 
 let max_odd=${nif}-1
@@ -259,9 +259,9 @@ n_baseband_files=`ls -l ${vbsdir} | wc -l`
 if [ ${n_baseband_files} -eq 1 ];then
     msg "${vbsdir} is empty."
     if ! [ ${online_process} -eq 0 ]; then
-        msg "Mounting file ${experiment}_${st}_no0${scan} into ${vbsdir}" 
+        msg "Mounting file ${experiment}_${st}_no0${scan} into ${vbsdir}"
         echo " Running vbs_fs -n 8 -I \"${experiment}_${st}_no0${scan}\" ${vbsdir} -o allow_other -o nonempty"
-        vbs_fs -n 8 -I "${experiment}_${st}_no0${scan}" ${vbsdir} -o allow_other -o nonempty 
+        vbs_fs -n 8 -I "${experiment}_${st}_no0${scan}" ${vbsdir} -o allow_other -o nonempty
     else
         msg "Mounting files for ${experiment} into ${vbsdir}"
         echo " Running vbs_fs -n 8 -I \"${experiment}*\" ${vbsdir} -o allow_other -o nonempty"
@@ -337,6 +337,12 @@ for scan in "${scans[@]}";do
         mkfifo ${filfifo}
         splice_list=${filfifo}' '${splice_list}
     done
+    if ! [ ${online_process} -eq 0 ]; then
+        # to avoid hitting the mount_max limit in /etc/fuse.conf we unmount each scan that is done
+        # but we do so only in 'online' mode because in 'offline' mode we would mess with the
+        # processing that assumes all files to be in the <experiment> directory.
+        fusermount -u ${vbsdir}
+    fi
 
     let njobs_splice=${njobs_parallel} #${nif}+1 # 1 extra for splice, another for digfil
 

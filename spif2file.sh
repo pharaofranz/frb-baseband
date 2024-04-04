@@ -142,10 +142,12 @@ skipbytes=`echo "(${frames_per_second}-${start_frame}-1)*${input_framesize}" | b
 skipbytes=`echo "${skipbytes}+${bytes_per_second}*${skip}" | bc`
 start_byte=${skipbytes}
 stop_byte=`echo "${start_byte}+${bytes_per_second}*${length}+16*${input_framesize}" | bc`
-state=`cmd2flexbuff "spif2file?" | awk '{print $5}'`
+
+runtime=${experiment}_${station}_0${scan}
+state=$(cmd2flexbuff "runtime=${runtime};spif2file?" | awk '{print $10}')
 while [[ ${state} == 'active' ]];do
     sleep 30
-    state=`cmd2flexbuff "spif2file?" | awk '{print $5}'`
+    state=$(cmd2flexbuff "runtime=${runtime};spif2file?" | awk '{print $10}')
 done
 for i in `seq 0 2 ${nif}`;do
     let ii=$i+1
@@ -163,7 +165,8 @@ for i in `seq 0 2 ${nif}`;do
     ln -s ${outdir2}/${vbs_vdif_file}_IF${even_if}.vdif ${linkdir}/if_${ii}
 done
 cmd2flexbuff \
-    "net_protocol=udpsnor:32000000:32000000:3; \
+    "runtime=${runtime}; \
+     net_protocol=udpsnor:32000000:32000000:3; \
      spif2file=vdifsize:${output_payload}; \
      mode=${mode}; \
      spif2file=bitspersample:2; \
@@ -172,8 +175,10 @@ cmd2flexbuff \
      spif2file=on:${start_byte}:${stop_byte} "
 echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Splitting job for ${vbs_fs_file} submitted, waiting 30s."
 sleep 30
-state=`cmd2flexbuff "spif2file?" | awk '{print $5}'`
+state=$(cmd2flexbuff "runtime=${runtime};spif2file?" | awk '{print $10}')
 while [[ ${state} == 'active' ]];do
     sleep 10
-    state=`cmd2flexbuff "spif2file?" | awk '{print $5}'`
+    state=$(cmd2flexbuff "runtime=${runtime};spif2file?" | awk '{print $10}')
 done
+# delete the runtime to make jive5ab disconnect from the input file such that we can unmount the directory if needed
+cmd2flexbuff "runtime=${runtime}:delete"
