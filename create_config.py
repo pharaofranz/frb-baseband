@@ -447,8 +447,11 @@ def fixStationName(station, short=True):
     '''
     station = station.lower()
     longnames = ['onsala85', 'onsala60', 'srt', 'wsrt', 'effelsberg', 'torun', 'tianma',
-                 'irbene', 'irbene16', 'medicina', 'noto', 'urumqi', 'badary', 'svetloe']
-    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 't6', 'ir', 'ib', 'mc', 'nt', 'ur', 'bd', 'sv']
+                 'irbene', 'irbene16', 'medicina', 'noto', 'urumqi', 'badary', 'svetloe',
+                 'cambg32m', 'darnhall', 'pickmere', 'defford', 'jb2_merl', 'knockin']
+    shortnames = ['o8', 'o6', 'sr', 'wb', 'ef', 'tr', 't6',
+                  'ir', 'ib', 'mc', 'nt', 'ur', 'bd', 'sv',
+                  'cm', 'da', 'pi', 'de', 'jm', 'kn']
     if not (station in longnames) and not (station in shortnames):
         raise InputError(f'Station {station} not recognized. ' \
                          f'Must be any of {longnames} or {shortnames}')
