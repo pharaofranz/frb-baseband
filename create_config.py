@@ -178,7 +178,7 @@ def getSourceCoords(vexdic, source):
         raise RunError(f'Could not get Ra and Dec for {source}.')
 
 
-def sched2df(vexdic):
+def sched2df(vexdic, add2db=False):
     '''
     Takes a dictionary with key 'SCHED' that contains all lines from the 'SCHED' section.
     Returns a pandas dataframe with all the scans and their info.
@@ -186,6 +186,10 @@ def sched2df(vexdic):
     lines = vexdic['SCHED']
     columns = ['scanNo', 't_startMJD', 'gap2previous_sec', 'length_sec',
                'missing_sec', 'fmode', 'source', 'station']
+    if add2db:
+        experiment = getExperimentName(vexdic)
+        columns = ['experiment','scanNo', 't_startMJD', 'gap2previous_sec', 'length_sec',
+                   'missing_sec', 'fmode', 'source', 'station', 'RefFreq_MHz', 'BW_MHz', 'n_IF']
 
     start_lineNums = [i for i,line in enumerate(lines) if line.startswith('scan')]
     stop_lineNums = [i for i,line in enumerate(lines) if line.startswith('endscan')]
@@ -228,7 +232,12 @@ def sched2df(vexdic):
                         if not length_tmp == length_sec:
                             print(f'\nWARNING: Not all stations have the same scan length in scanNo {scanNo}.\n')
                     length_tmp = length_sec
-                    scans.append([scanNo, start, gap2previous, length_sec, missing_sec, mode, source, station])
+                    if add2db:
+                        f_ref, bw, n_if,_ ,_ = getFreq(vexdic, station, mode)
+                        scans.append([experiment, scanNo, start, gap2previous, length_sec, missing_sec, mode,
+                                      source, station, f_ref, bw, n_if])
+                    else:
+                        scans.append([scanNo, start, gap2previous, length_sec, missing_sec, mode, source, station])
                 else:
                     continue
         previous_stop = start + length_sec / 86400.
