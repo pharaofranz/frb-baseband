@@ -42,8 +42,6 @@ while true; do
     fi
     job=${jobarray[0]}
     if ! [ -n "$job" ];then
-        echo 'no jobs but '
-        echo "we see $(ps -ef | grep digifil | grep -v /bin/sh | wc -l) jobs running"
         sleep 10
         continue
     fi
@@ -53,7 +51,7 @@ while true; do
     if [ $(echo "${n_subbands}+1+${njobs_running}" | bc -l) -lt ${maxjobs} ];then
         #submit the job
         echo "submitting ${config_file}"
-        base2fil ${config_file}
+        base2fil ${config_file} 1&> /tmp/${config_file}.log &
         # drop that first entry from the array
         jobarray=( "${jobarray[@]:1}" )
     fi
