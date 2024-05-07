@@ -20,7 +20,7 @@ helpmsg() {
 
 pwait() {
     # helper to parallelize jobs
-    while [ $(jobs -p | wc -l) -ge $1 ]; do
+    while [ $(ps -ef | grep digifil | grep -v /bin/sh | wc -l) -ge $1 ]; do
         sleep 0.33
     done
 }
@@ -309,7 +309,7 @@ for scan in "${scans[@]}";do
         if [ ! -f ${vdifnme} ];then
             msg "Splitting the raw data."
             spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
-	    	${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
+	    	${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even} ${online_process}
     	if [[ $? -eq 1 ]];then
     	    exit 1
     	fi
@@ -326,7 +326,7 @@ for scan in "${scans[@]}";do
         if [ ! -f ${vdifnme} ];then
             msg "Splitting the raw data for even IFs."
             spif2file ${experiment} ${st} ${scan} ${nif} ${mode} ${skip} ${length} ${scanname} \
-		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even}
+		      ${flipIF} ${vbsdir} ${workdir_odd} ${workdir_even} ${online_process}
     	if [[ $? -eq 1 ]];then
     	    exit 1
     	fi

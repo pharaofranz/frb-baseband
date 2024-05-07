@@ -9,10 +9,11 @@ skip=${6:-0}
 length=${7:-9999}  #in seconds
 scanname=${8:-${scan}}
 flipped=${9:-0} # recipes assume LO is below sky freq, if LO above sky freq LSB and USB are flipped
-
 vbs_fs_dir=${10:-"${HOME}/vbs_data/${experiment}/"}
 outdir1=${11:-"/scratch0/${USER}/${experiment}"}
 outdir2=${12:-"/scratch1/${USER}/${experiment}"}
+online=${13:-0}
+
 linkdir="/tmp/${USER}/${experiment}/${scanname}"
 
 mode=${mode^^} # set all upper case
@@ -144,6 +145,10 @@ start_byte=${skipbytes}
 stop_byte=`echo "${start_byte}+${bytes_per_second}*${length}+16*${input_framesize}" | bc`
 
 runtime=${experiment}_${station}_0${scan}
+if [[ ${online} -gt 0 ]];then
+    runtime='online'
+fi
+
 state=$(cmd2flexbuff "runtime=${runtime};spif2file?" | awk '{print $10}')
 while [[ ${state} == 'active' ]];do
     sleep 30
