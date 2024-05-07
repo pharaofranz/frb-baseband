@@ -30,6 +30,9 @@ def options():
                          help='REQUIRED. Vex file of the experiment (absolute path).')
     general.add_argument('-e', '--expname', type=str, required=False, default=None,
                          help='Only needed if experiment name is different from vex file name.')
+    general.add_argument('-j', '--joblist', type=str, default='/tmp/joblist.txt',
+                         help='File to which jobs, i.e. config files, will be appended. '+
+                         'Those will be picked up by online-deamon.sh (needs to be started separately.)')
     return parser.parse_args()
 
 
@@ -118,11 +121,10 @@ def main(args):
             CreateConfig += CreateConfig + " --pol 4"
         os.system(CreateConfig)
 
-        SubmitJob = "base2fil " + ConfigFile
-        # Check so there are enough available job slots before submitting the job.
-        MaxBusySlots = int(TotalSlots-(NbrOfIF+1))
-        CheckDigifil = "while [ $(ps -ef | grep digifil | grep -v /bin/sh | wc -l) -gt " + str(MaxBusySlots) + " ]; do echo 'waiting for a slot';sleep 60; done"
-        os.system(CheckDigifil)
+        check_joblist_exists = f"if ! [ -f {args.joblist} ];then touch {args.joblist};fi"
+        os.system(check_joblist_exists)
+
+        SubmitJob = f"echo \"{ConfigFile} {args.nIF}\" >> {args.joblist}"
         os.system(SubmitJob)
     return
 
