@@ -34,7 +34,7 @@ def options():
 
 
 def main(args):
-    TotalSlots = 54 # Total number of job slots to 54 to fit Sleipnir
+    TotalSlots = 37  # Total number of job slots to 54 to fit Sleipnir
     ConfigDir = "/home/oper/frb_processing/configs/"
     FlagDir = "/data1/franz/fetch/Standard/"
     VexFile = args.vex
@@ -109,13 +109,13 @@ def main(args):
     RecordRate = 1/(2*IF)
     t_samp = RecordRate*2*ChanPerIF		# Per channel.
     DownSamp = int(t_res/t_samp)
-    NbrOfJobs = int(IF+1)
+    #NbrOfJobs = int(IF+1)
     f_min = int(f_min*1000) 	        # In MHz.
     f_max = int(f_min+BW)
 
     ConfigFile = ConfigDir + ExpName + "_" + TelName + "_" + SourceName + "_no" + ScanNbr + ".conf"
     FlagFile = FlagDir + TelName + ".flag_" + str(f_min) + "-" + str(f_max) + "MHz_" + str(NbrOfChan_FFT) + "chan"
-    CreateConfig = "create_config.py -i " + VexFile + " -s " + SourceName + " -t " + TelName + " -N " + str(int(NbrOfIF+1)) + " -d " + str(DownSamp) + " -n " + str(ChanPerIF) + " -S " + ScanNbr + " -F " + FlagFile + " --online" + " -o " + ConfigFile
+    CreateConfig = "create_config.py -i " + VexFile + " -s " + SourceName + " -t " + TelName + " -N " + str(TotalSlots) + " -d " + str(DownSamp) + " -n " + str(ChanPerIF) + " -S " + ScanNbr + " -F " + FlagFile + " --online" + " -o " + ConfigFile
     if dm.isPulsar is False:
         CreateConfig += CreateConfig + " --search"
     else:
@@ -124,9 +124,9 @@ def main(args):
 
     SubmitJob = "base2fil " + ConfigFile
     # Check so there are enough available job slots before submitting the job.
-    MaxBusySlots = int(TotalSlots-(NbrOfIF+1))
-    CheckDigifil = "while [ $(ps -ef | grep digifil | grep -v /bin/sh | wc -l) -gt " + str(MaxBusySlots) + " ]; do sleep 30; done"
-    os.system(CheckDigifil)
+    #MaxBusySlots = int(TotalSlots-(NbrOfIF+1))
+    #CheckDigifil = "while [ $(ps -ef | grep digifil | grep -v /bin/sh | wc -l) -gt " + str(MaxBusySlots) + " ]; do sleep 30; done"
+    #os.system(CheckDigifil)
     os.system(SubmitJob)
 
     return
