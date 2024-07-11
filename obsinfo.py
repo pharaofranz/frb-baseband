@@ -19,9 +19,9 @@ def options():
                          help='Source for which the available scans are to be displayed.')
     general.add_argument('-t', '--telescope', type=str, default=None,
                          choices=['o8', 'o6', 'sr', 'wb', 'ef', 'tr', \
-                                  'ir', 'ib', 'mc', 'nt', 'onsala85', 'onsala60', 'srt',\
+                                  'ir', 'ib', 'mc', 'nt', 't6', 'onsala85', 'onsala60', 'srt',\
                                   'wsrt', 'effelsberg', 'torun', 'irbene', 'irbene16',\
-                                  'medicina', 'noto'],
+                                  'medicina', 'noto', 'tianma'],
                          help='Station name or 2-letter code of dish to be printed.')
     general.add_argument('-S', '--scans', nargs='+', default=None, type=int,
                          help='Optional list of scans to be looked at. By default will ' \
@@ -57,10 +57,10 @@ def main(args):
             stations = [args.telescope]
         for station in stations:
             for fmode in fmodes:
-                fref, bw, nIF, flipIF, recFmt = getFreq(vex, station, fmode)
+                fref, bw, nIF, flipIF, recFmt, nbits = getFreq(vex, station, fmode)
                 print(f"Station {station} in mode {fmode} has the following setup:")
-                print(f"fref = {fref} MHz \n Bandwidth/IF = {bw} MHz\n Number of IFs = {nIF}\n recording Format is {recFmt}.")
-                print(f"Assuming 2-bit sampling, this implies a total data rate of {int(nIF) * int(bw) * 8} Mbps = {int(nIF) * int(bw)} MB/s\n\n")
+                print(f"fref = {fref} MHz \n Bandwidth/IF = {bw} MHz\n Number of IFs = {nIF}\n recording Format is {recFmt}, bit-depth is {nbits}.")
+                print(f"Assuming {nbits}-bit sampling, this implies a total data rate of {int(nIF) * int(bw) * 4 * int(nbits)} Mbps \n\n")
         return
     if not args.source == None:
         source = args.source.replace('_D','').upper()
@@ -121,4 +121,3 @@ def main(args):
 if __name__ == "__main__":
     args = options()
     main(args)
-        

@@ -200,6 +200,7 @@ flagFile=''       # Optionally, a flag file can be passed.
 keepBP=0          # If set the bandpass is not removed, i.e. -I0 is added to the digifil command.
 split_vdif_only=0 # Filterbanks will not be created if this is set to nonzero.
 online_process=0  # Each scan will get its own directory if this is set to nonzero (this is used for the online pipeline).
+nbits=2           # bit depth of raw data
 
 # Load other variables from config file, parameters above will be overwritten if they are in the config file
 source ${1}
@@ -220,7 +221,7 @@ fifodir=${fifodir_base}/fifos/
 vbsdir=${vbsdir_base}/${experiment}              # Baseband data is mounted here.
 
 # Nothing to change below this line
-datarate=`echo $bw*$nif*8 | bc | cut -d '.' -f1` # bw in MHz, 8 = 2pol*2bitsamples*2nyquist
+datarate=`echo $bw*$nif*$nbits*4 | bc | cut -d '.' -f1` # bw in MHz, 4 = 2pol*2nyquist
 nbbc=`echo ${nif}*2 | bc | cut -d '.' -f1`
 
 freqUSB_0=`echo ${freqLSB_0}+${bw} | bc`         # central frequency of lowest USB channel (typically IF2)
@@ -283,10 +284,10 @@ if [ ${isMark5b} -eq 0 ];then
     frame_size=`get_frame_size ${test_file}`
     headersize=`get_header_size ${test_file}`
     bytes_per_frame=`echo ${frame_size}-${headersize} | bc`
-    mode="VDIF_${bytes_per_frame}-${datarate}-${nbbc}-2"
+    mode="VDIF_${bytes_per_frame}-${datarate}-${nbbc}-${nbits}"
 else
     msg "Assuming mark5b data with a payload of 10000 bytes per frame and a 16 byte header."
-    mode="MARK5B-${datarate}-${nbbc}-2"
+    mode="MARK5B-${datarate}-${nbbc}-${nbits}"
 fi
 
 msg "will use ${mode}"

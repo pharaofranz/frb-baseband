@@ -28,6 +28,7 @@ for dir in $directs;do
     fi
 done
 
+bitspersample=2
 if [[ ${mode} == 'VDIF_8000-4096-32-2' ]];then
     frames_per_second=64000
     recipe="64>[16,17,48,49][0,1,32,33][18,19,50,51][2,3,34,35][20,21,52,53][4,5,36,37][22,23,54,55][6,7,38,39][24,25,56,57][8,9,40,41][26,27,58,59][10,11,42,43][28,29,60,61][12,13,44,45][30,31,62,63][14,15,46,47]:0-15"
@@ -53,6 +54,11 @@ elif [[ ${mode} == 'VDIF_1000-1024-16-2' ]];then
 elif [[ ${mode} == 'VDIF_8000-1024-8-2' ]];then
     frames_per_second=16000
     recipe="16>[8,9,12,13][0,1,4,5][10,11,14,15][2,3,6,7]:0-3"
+#
+elif [[ ${mode} == 'VDIF_8000-1024-16-1' ]];then
+    frames_per_second=16000
+    recipe="16>[8,12][0,4][9,13][1,5][10,14][2,6][11,15][3,7]:0-7"
+    bitspersample=1
 #
 elif [[ ${mode} == 'VDIF_8000-512-4-2' ]];then
     frames_per_second=8000
@@ -174,8 +180,8 @@ cmd2flexbuff \
      net_protocol=udpsnor:32000000:32000000:3; \
      spif2file=vdifsize:${output_payload}; \
      mode=${mode}; \
-     spif2file=bitspersample:2; \
-     spif2file=bitsperchannel:2; \
+     spif2file=bitspersample:${bitspersample}; \
+     spif2file=bitsperchannel:${bitspersample}; \
      spif2file=connect:${vbs_fs_dir}/${vbs_fs_file}:${recipe}=${linkdir}/if_{tag},w; \
      spif2file=on:${start_byte}:${stop_byte} "
 echo "`date +%d'-'%m'-'%y' '%H':'%M':'%S` Splitting job for ${vbs_fs_file} submitted, waiting 30s."

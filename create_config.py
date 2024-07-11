@@ -131,10 +131,15 @@ def getFreq(vexdic, station, mode):
                     recFmt = line.split('=')[1].strip().split('.')[0].lower()
                     if not recFmt in ['vdif', 'mark5b', 'vdif5032']:
                         raise RunError(f'Unknown recording format: {recFmt}.')
+                    try:
+                        nbits = line.split('bit')[0].split('Ch')[1]
+                    except:
+                        print('Could not determine bit depth. Assuming 2-bit sampling.')
+                        nbits = 2
             break
     try:
         flipIF = True if LO > f_ref else False
-        return f_ref, bw, n_if, flipIF, recFmt
+        return f_ref, bw, n_if, flipIF, recFmt, nbits
     except:
         raise RunError(f'Could not determine frequency/recording setup for {station} in {mode}.')
 
@@ -233,7 +238,7 @@ def sched2df(vexdic, add2db=False):
                             print(f'\nWARNING: Not all stations have the same scan length in scanNo {scanNo}.\n')
                     length_tmp = length_sec
                     if add2db:
-                        f_ref, bw, n_if,_ ,_ = getFreq(vexdic, station, mode)
+                        f_ref, bw, n_if, _, _, _ = getFreq(vexdic, station, mode)
                         scans.append([experiment, scanNo, start, gap2previous, length_sec, missing_sec, mode,
                                       source, station, f_ref, bw, n_if])
                     else:
@@ -345,7 +350,7 @@ def writeConfig(outfile, experiment, source, station,
                 scans, skips, lengths, scanNames, recFmt,
                 template=None, search=False, njobs=20, flipIF=False,
                 keepVDIF=False, flagfile=None, nbit=None, keepBP=False,
-                pol=None, split_only=False, online=False):
+                pol=None, split_only=False, online=False, nbits=2):
     conf = []
     scans = list2BashArray(scans)
     skips = list2BashArray(skips)
@@ -385,6 +390,8 @@ def writeConfig(outfile, experiment, source, station,
         conf.append(f'split_vdif_only=1\n')
     if online:
         conf.append(f'online_process=1\n')
+    if not nbits == 2:
+        conf.append(f'nbits={nbits}\n')
     conf.append('\n')
     if not template == None:
         if not os.path.exists(template):
@@ -517,10 +524,10 @@ def main(args):
             else:
                 outfile = outfile.replace(fmodes[i-1], fmode)
         try:
-            fref, bw, nIF, flipIF, recFmt = getFreq(vex, station, fmode)
+            fref, bw, nIF, flipIF, recFmt, nbits = getFreq(vex, station, fmode)
         except:
             if debug:
-                fref, bw, nIF, flipIF, recFmt = getFreq(vex, station, fmode)
+                fref, bw, nIF, flipIF, recFmt, nbits = getFreq(vex, station, fmode)
             print(f'No setup for station {station} in mode {fmode}.')
             continue
         try:
@@ -540,14 +547,16 @@ def main(args):
             writeConfig(outfile, experiment, source, station, ra, dec,
                         fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                         scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                        flagfile, args.nbit, args.keepBP, args.pol, args.split_only, online)
+                        flagfile, args.nbit, args.keepBP, args.pol, args.split_only,
+                        online, nbits)
             print(f'Successfully written {outfile}.')
         except:
             if debug:
                 writeConfig(outfile, experiment, source, station, ra, dec,
                             fref, bw, nIF, nchan, downsamp, scans, skips, lengths,
                             scanNames, recFmt, template, search, njobs, flipIF, keepVDIF,
-                            flagfile, args.nbit, args.keepBP, args.pol, args.split_only, online)
+                            flagfile, args.nbit, args.keepBP, args.pol, args.split_only,
+                            online, nbits)
             print(f'Could not create config file for {source} observed with {station} in {fmode}.')
         print(f'With this setup your frequency and time resolution will be {bw/nchan} MHz and {1/(bw*1e6)*nchan*downsamp*1e3} ms.')
     return
