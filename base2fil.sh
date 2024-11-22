@@ -20,8 +20,10 @@ helpmsg() {
 
 pwait() {
     # helper to parallelize jobs
-    while [ $(ps -ef | grep digifil | grep -v /bin/sh | wc -l) -ge $1 ]; do
-        sleep 0.33
+    digifils_in_process=$(ps -ef | grep digifil | grep -v /bin/sh | wc -l) # actually return n-digifils+1 because of grep but that's fine because splice is running too.
+    while [ $(ps -ef | grep digifil | grep -v /bin/sh | grep -v grep | wc -l) -ge $1 ]; do
+        echo "${digifils_in_process} digifils running, waiting..."
+        sleep 10
     done
 }
 
@@ -59,8 +61,7 @@ run_process_vdif() {
         process_vdif ${source} ${workdir}/${experiment}_${st}_no0${scanname}_IF${i}.vdif  \
                      -f $freqEdge -b ${bw} -${sideband} --nchan $nchan --nsec $nsec --start $start \
                      --force -t ${station} --pol ${pol} --nthreads ${nthreads} --tscrunch ${tscrunch} \
-		     --fil_out_dir ${fifodir} --nbit=${nbit} ${keepBP_flag} & sleep 0.2
-        pwait $njobs
+		     --fil_out_dir ${fifodir} --nbit=${nbit} ${keepBP_flag} & sleep 0.1
         freqEdge=`echo $freqEdge+$bandstep | bc`
     done
 }
@@ -171,6 +172,32 @@ if [[ $1 == '-h' ]] || [[ -z "$1" ]];then
     helpmsg
     exit 0
 fi
+
+trim() {
+    local var="$*"
+    # remove leading whitespace characters
+    var="${var#"${var%%[![:space:]]*}"}"
+    # remove trailing whitespace characters
+    var="${var%"${var##*[![:space:]]}"}"
+    printf '%s' "$var"
+}
+
+check_scratch_space() {
+    # function to see if we have enough space on the designated space for the split vdif files
+    workdir_odd_base=$1
+    workdir_even_base=$2
+    fs_odd=$(cut -f 2 -d '/' <<< ${workdir_odd_base})
+    fs_even=$(cut -f 2 -d '/' <<< ${workdir_even_base})
+    min_space_required=${3:-100} # in GB
+    # check how much space is left and remove leading/trailing whitespace
+    space_odd=$(trim $(df -h | grep ${fs_odd} | cut -f 3 -d 'G'))
+    space_even=$(trim $(df -h | grep ${fs_even} | cut -f 3 -d 'G'))
+    while [[ ${space_odd} -lt ${min_space_required} ]] || [[ ${space_even} -lt ${min_space_required} ]];do
+        sleep 20
+        space_odd=$(trim $(df -h | grep ${fs_odd} | cut -f 3 -d 'G'))
+        space_even=$(trim $(df -h | grep ${fs_even} | cut -f 3 -d 'G'))
+    done
+}
 
 check_progs
 check_vars
@@ -303,6 +330,7 @@ for scan in "${scans[@]}";do
     scanname=`printf "%03g" ${scanname}`
     vdif_files=""
     splice_list=''
+    check_scratch_space ${workdir_odd} ${workdir_even}
     for i in `seq 1 2 ${nif}`;do
         # odd IFs first
         vdifnme=${workdir_odd}/${experiment}_${st}_no0${scanname}_IF${i}.vdif
@@ -373,6 +401,9 @@ for scan in "${scans[@]}";do
     frames_per_second_per_band=`echo ${frames_per_second}/${nif} | bc | cut -d '.' -f1`
     nsec=`echo "${file_size}/${frame_size_split}/${frames_per_second_per_band}" | bc`
 
+    max_busy_slots=`echo ${njobs_splice}-${nif}-1 | bc`
+    pwait $max_busy_slots
+
     run_process_vdif $scanname "$ifs_odd" "$target" $experiment $st $freqLSB_0 $bw l $nchan $nsec $start \
                      $station $njobs_splice $skip $workdir_odd $pol $digifil_nthreads $tscrunch ${fifodir} \
 		     $nbit $keepBP
@@ -416,7 +447,7 @@ for scan in "${scans[@]}";do
 	fi
     fi
     sleep 5
-    pwait $njobs_splice
+    #pwait $njobs_splice
 done # end scans
 wait < <(jobs -p)
 
